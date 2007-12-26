@@ -1,0 +1,129 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use FindBin;
+use File::Spec;
+use File::Basename;
+use File::Path;
+use lib File::Spec->catfile($FindBin::Bin, '..', 'lib');
+use Archive::Lha::Decode;
+use Archive::Lha::Header;
+use Archive::Lha::Stream::File;
+use Carp;
+
+my $controller = +{
+    table => sub {
+        my $fname = shift or usage();
+        my $stream = open_archive($fname);
+        while ( defined( my $level = $stream->search_header ) ) {
+            my $header = Archive::Lha::Header->new(
+                level  => $level,
+                stream => $stream
+            );
+            $stream->seek( $header->data_top );
+
+            my $decoded = '';
+            my $decoder = Archive::Lha::Decode->new(
+                header => $header,
+                read   => sub { $stream->read(@_) },
+                write  => sub { $decoded .= join '', @_ },
+            );
+            $decoder->decode;
+            print $header->pathname,"\n";
+        }
+    },
+    extract => sub {
+        my $fname = shift or usage();
+        my %target;
+        if (@_) {
+            %target = map { $_ => 1 } @_;
+        }
+        my $stream = open_archive($fname);
+        while ( defined( my $level = $stream->search_header ) ) {
+            my $header = Archive::Lha::Header->new(
+                level  => $level,
+                stream => $stream
+            );
+            if ( %target and !$target{$header->pathname} ) {
+                $stream->seek( $header->next_header );
+                next;
+            }
+            $stream->seek( $header->data_top );
+
+            my $decoded = '';
+            my $decoder = Archive::Lha::Decode->new(
+                header => $header,
+                read   => sub { $stream->read(@_) },
+                write  => sub { $decoded .= join '', @_ },
+            );
+            my $crc = $decoder->decode;
+            croak "crc mismatch" if $crc != $header->crc16;
+
+            write_all($header->pathname, $decoded);
+        }
+    },
+};
+
+our $command_map = {
+    t => 'table',
+    x => 'extract',
+};
+
+&main;exit;
+
+sub main {
+    my $cmd = shift @ARGV or usage();
+
+    $cmd = $command_map{$cmd} if exists $command_map{$cmd};
+
+    $controller->{$cmd}->(@ARGV);
+}
+
+sub usage {
+    die "Usage: $0 (table|extract) archive (files)\n";
+}
+
+sub open_archive {
+    my $fname = shift;
+    croak "fname missing" unless $fname;
+    Archive::Lha::Stream::File->new(file => $fname);
+}
+
+sub write_all {
+    my ($fname, $data) = @_;
+    my $dir = dirname($fname);
+    mkpath $dir unless -d $dir;
+    open my $fh, '>:raw', $fname or croak $!;
+    binmode $fh;
+    print $fh $data;
+    close $fh;
+}
+
+__END__
+
+=head1 NAME
+
+plha - command line tool to extract .lzh archive
+
+=head1 SYNOPSIS
+
+  # From the command line
+  > plha table archive.lzh
+  > plha extract archive.lzh
+
+  # if you want to extract a specific file from the archive
+  > plha extract archive.lzh pathname_in_the_archive
+
+=head1 DESCRIPTION
+
+plha is a simple command line tool to extract .lzh archives. It shows file list in an archive, and extracts all the files (or selected files) in the current working directory. No pathname conversion nor content filtering. No parent directory for the extracted files. Use this as a skeleton for your custom command line tool. Patches are welcome.
+
+=head1 AUTHOR
+
+Tokuhiro Matsuno <tokuhiro __at__ mobilefactory.jp>
+
+LICENSE AND COPYRIGHT
+
+Copyright (c) 2007, Tokuhiro Matsuno <tokuhiro __at__ mobilefactory.jp>.
+
+This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself. See perlartistic.
