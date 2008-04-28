@@ -11,6 +11,8 @@ foreach my $name (qw( lh5 lh7 lh0 )) {
   test( file_stream( $name ) );
 }
 
+test( file_stream('lh5_lvl1') );
+
 sub test {
   my ($stream, $value) = @_;
 

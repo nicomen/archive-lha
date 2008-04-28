@@ -32,6 +32,7 @@ t/99_pod.t
 t/99_podcoverage.t
 t/archive/lh0.lzh
 t/archive/lh5.lzh
+t/archive/lh5_lvl1.lzh
 t/archive/lh7.lzh
 tools/plha
 META.yml                                 Module meta-data (added by MakeMaker)

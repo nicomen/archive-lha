@@ -51,14 +51,12 @@ sub new {
 
   my $extended_size_total = 0;
   my $extended_size = _short( @bits[-2..-1] );
-  my $from = $size;
   while( $extended_size ) {
+    @bits = split '', $stream->read( $extended_size );
     $extended_size_total += $extended_size;
-    my $to = $from + $extended_size - 1;
-    my ($next, %hash) = _extended_header( @bits[$from..$to] );
+    my ($next, %hash) = _extended_header( @bits );
     %header = (%header, %hash) if %hash;
     $extended_size = $next;
-    $from = $to + 1;
   }
   $header{encoded_size} = $header{skip_size} - $extended_size_total;
 

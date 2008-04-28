@@ -1,5 +1,9 @@
 Revision history for Archive-Lha
 
+0.03 2008/04/28
+  - applied a patch from Yukio USUDA to fix level 1 header handling.
+  - added 'known limitation' section to note the slowness.
+
 0.02 2007/12/26
   - initial CPAN release
 

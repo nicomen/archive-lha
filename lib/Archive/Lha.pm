@@ -3,7 +3,7 @@ package Archive::Lha;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 require XSLoader;
 XSLoader::load('Archive::Lha', $VERSION);
@@ -39,6 +39,10 @@ Archive::Lha - extract .LZH archives
 LHa family is one of the lagacy but prevailing (and historically important) archivers. Though it has lost former popularity, it is still used widely in Japan, and reportedly, in Amiga world. And we have lots of LHa archives created under various environments at hand.
 
 This package offers rather crude methods to decode/extract files from LHa archives. As of writing this, I'm not inclined to support creating/updating archives for various reasons but this may change. As for decoding, I'll probably add if testable (and preferably uploadable) archives should be found or offered.
+
+=head1 KNOWN LIMITATION
+
+As you suspect, this is slow. Really slow. Some of the code is written in XS/C, but it may take minutes to extract larger archives (well, I must confess, the prototype of this module, written in pure perl, took hours to extract them). If you need more speed, just use native archivers such as LHa for UNIX, or unlha32.dll for MSWin32. They have their own limitations (such as single-threadedness, may need temporary files, and others), but they're much faster, and would take seconds to extract.
 
 =head1 ACKNOWLEDGMENT
 
