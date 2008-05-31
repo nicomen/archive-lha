@@ -32,22 +32,24 @@
 #define self_store_p(key, n) \
   hash_store(self, key, newSVpv(n, 0))
 
-#define create_mask(n) \
-  (1 << (USHORT_BIT - 1 - n))
+#define char_bit       8
+#define uchar_bit      8
+#define ushort_bit    16
 
-#define CHAR_BIT       8
-#define UCHAR_BIT      8
-#define USHORT_BIT    16
+#define uchar_max (1 << uchar_bit) - 1
+#define ushort_max (1 << ushort_bit) - 1
 
-#ifndef USHORT_MAX
-#define USHORT_MAX (1 << USHORT_BIT) - 1
+#define uchar_center  (1 << (uchar_bit - 1))
+#define ushort_center (1 << (ushort_bit - 1))
+
+#ifndef min
+#define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
 
-#define UCHAR_CENTER  (1 << (UCHAR_BIT - 1))
-#define USHORT_CENTER (1 << (USHORT_BIT - 1))
-#define MIN(a,b) ((a) <= (b) ? (a) : (b))
+#define create_mask(n) \
+  (1 << (ushort_bit - 1 - n))
 
-#define READBUF_SIZE 4096
+#define readbuf_size 4096
 
 typedef struct LhaTree {
   unsigned short * left;
@@ -67,7 +69,7 @@ typedef struct LhaBitstream {
   unsigned char  buf;
   unsigned char  pos;
   unsigned short blocksize;
-  unsigned char  readbuf[READBUF_SIZE];
+  unsigned char  readbuf[readbuf_size];
   unsigned short readpos;
 } LhaBitstream;
 

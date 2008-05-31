@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use 5.008001;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
@@ -18,8 +19,8 @@ WriteMakefile(
     'File::Spec'          => 0,
     'List::Util'          => 0,
     'Log::Dispatch'       => 0,
-    'Test::UseAllModules' => 0,
-    'Test::More'          => 0.47,
+    'Test::UseAllModules' => '0.09',
+    'Test::More'          => '0.47',
     'Time::Piece'         => 0,
   },
   EXE_FILES => ['tools/plha'],

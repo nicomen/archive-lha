@@ -32,14 +32,14 @@ destroy_stash(LhaStash * stash)
 }
 
 void
-safe_croak(LhaStash * stash, unsigned char * dying_message)
+safe_croak(LhaStash * stash, char * dying_message)
 {
   destroy_stash(stash);
   croak(dying_message);
 }
 
 void
-output(LhaStash * stash, unsigned char * queue, unsigned int len)
+output(LhaStash * stash, unsigned char * queue, int len)
 {
   dSP;
   ENTER;
@@ -55,7 +55,7 @@ output(LhaStash * stash, unsigned char * queue, unsigned int len)
 }
 
 void
-input(LhaStash * stash, unsigned int len)
+input(LhaStash * stash, int len)
 {
   int n;
   dSP;
@@ -85,7 +85,7 @@ unsigned short
 shiftbits(LhaBitstream * bit, unsigned char n)
 {
   return (bit->value << n)
-       + (bit->buf >> (CHAR_BIT - n));
+       + (bit->buf >> (char_bit - n));
 }
 
 void
@@ -98,20 +98,20 @@ fillbuf(LhaStash * stash, unsigned char n)
     bit->value = shiftbits(bit, bit->pos);
     if (stash->encoded_size > 0) {
       if (bit->readpos == 0) {
-        if (stash->encoded_size > READBUF_SIZE)
-          len = READBUF_SIZE;
+        if (stash->encoded_size > readbuf_size)
+          len = readbuf_size;
         else
           len = stash->encoded_size;
         input(stash, len);
       }
       bit->buf = bit->readbuf[bit->readpos++];
-      if (bit->readpos == READBUF_SIZE)
+      if (bit->readpos == readbuf_size)
         bit->readpos = 0;
       stash->encoded_size--;
     }
     else
       bit->buf = 0;
-    bit->pos = CHAR_BIT;
+    bit->pos = char_bit;
   }
   bit->pos -= n;
   bit->value = shiftbits(bit, n);
@@ -121,7 +121,7 @@ fillbuf(LhaStash * stash, unsigned char n)
 unsigned short
 peekbits(LhaStash * stash, unsigned char n)
 {
-  return (stash->bit->value >> (USHORT_BIT - n));
+  return (stash->bit->value >> (ushort_bit - n));
 }
 
 unsigned short
@@ -145,7 +145,7 @@ init_bitstream(LhaStash * stash)
   stash->bit->value = 0;
   stash->bit->buf = 0;
   stash->bit->pos = 0;
-  fillbuf(stash, USHORT_BIT);
+  fillbuf(stash, ushort_bit);
 }
 
 /*
@@ -157,9 +157,9 @@ init_bitstream(LhaStash * stash)
 void
 make_table(LhaStash * stash, LhaTable * table, unsigned short nchar)
 {
-  unsigned short count[USHORT_BIT + 1];
-  unsigned short weight[USHORT_BIT + 1];
-  unsigned short start[USHORT_BIT + 1];
+  unsigned short count[ushort_bit + 1];
+  unsigned short weight[ushort_bit + 1];
+  unsigned short start[ushort_bit + 1];
   unsigned short total, avail;
   unsigned short from, to;
   unsigned char  bits_to_shift, bit;
@@ -167,39 +167,39 @@ make_table(LhaStash * stash, LhaTable * table, unsigned short nchar)
   char           n;
   unsigned short *p;
 
-  if (table->bit > USHORT_BIT) {
+  if (table->bit > ushort_bit) {
     safe_croak(stash, "Table is broken: table bit is too large");
   }
 
-  for(i = 1; i <= USHORT_BIT; i++) {
+  for(i = 1; i <= ushort_bit; i++) {
     count[i]  = 0;
-    weight[i] = 1 << (USHORT_BIT - i);
+    weight[i] = 1 << (ushort_bit - i);
   }
 
   for(i = 0; i < nchar; i++)
-    if (table->length[i] > USHORT_BIT) {
+    if (table->length[i] > ushort_bit) {
       safe_croak(stash, "Table is broken: bit length is too large");
     }
     else
       count[table->length[i]]++;
 
   total = 0;
-  for(i = 1; i <= USHORT_BIT; i++) {
+  for(i = 1; i <= ushort_bit; i++) {
     start[i] = total;
     total += weight[i] * count[i];
   }
-  if (total & USHORT_MAX) {
+  if (total & ushort_max) {
     safe_croak(stash, "Table is broken: total mismatch");
   }
 
-  bits_to_shift = USHORT_BIT - table->bit;
+  bits_to_shift = ushort_bit - table->bit;
   for(i = 1; i <= table->bit; i++) {
     start[i]  >>= bits_to_shift;
     weight[i] >>= bits_to_shift;
   }
 
   from = start[table->bit + 1] >> bits_to_shift;
-  to   = MIN(1 << table->bit, table->size);
+  to   = min(1 << table->bit, table->size);
   if (from)
     for(i = from; i < to; i++)
       table->table[i] = 0;
@@ -211,7 +211,7 @@ make_table(LhaStash * stash, LhaTable * table, unsigned short nchar)
       continue;
     l = start[bit] + weight[bit];
     if (bit <= table->bit) {
-      l = MIN(l, table->size);
+      l = min(l, table->size);
       for(j = start[bit]; j < l; j++)
         table->table[j] = i;
     }
@@ -228,7 +228,7 @@ make_table(LhaStash * stash, LhaTable * table, unsigned short nchar)
           stash->tree->right[avail] = stash->tree->left[avail] = 0;
           *p = avail++;
         }
-        if (j & USHORT_CENTER)
+        if (j & ushort_center)
           p = &(stash->tree->right[*p]);
         else
           p = &(stash->tree->left[*p]);
@@ -263,7 +263,7 @@ read_pt_len(LhaStash * stash, short nn, unsigned char nbit, short threshold)
   }
   else {
     i = 0;
-    while (i < MIN(n, stash->pt->length_size)) {
+    while (i < min(n, stash->pt->length_size)) {
       c = peekbits(stash, 3);
       if (c != 7)
         fillbuf(stash, 3);
@@ -304,7 +304,7 @@ read_c_len(LhaStash * stash)
   }
   else {
     i = 0;
-    while (i < MIN(n, stash->c->length_size)) {
+    while (i < min(n, stash->c->length_size)) {
       c = stash->pt->table[peekbits(stash, stash->pt->bit)];
       if (c >= stash->NT) {
         mask = create_mask(stash->pt->bit);
@@ -342,7 +342,7 @@ decode_c(LhaStash * stash)
   unsigned short j, mask;
 
   if (stash->bit->blocksize == 0) {
-    stash->bit->blocksize = getbits(stash, USHORT_BIT);
+    stash->bit->blocksize = getbits(stash, ushort_bit);
     read_pt_len(stash, stash->NT, stash->TBIT, 3);
     read_c_len(stash);
     read_pt_len(stash, stash->NP, stash->PBIT, -1);
@@ -401,7 +401,7 @@ unsigned short
 calc_crc16(unsigned short crc, unsigned char * str, unsigned int len)
 {
   while (len-- > 0)
-    crc = crctable[(crc ^ *str++) & UCHAR_MAX] ^ (crc >> CHAR_BIT);
+    crc = crctable[(crc ^ *str++) & uchar_max] ^ (crc >> char_bit);
   return crc;
 }
 
@@ -496,13 +496,13 @@ xs_decode(hashref)
     init_tables(self, stash);
     init_bitstream(stash);
 
-    adjust = (1 << UCHAR_BIT) - self_uchar("THRESHOLD");
+    adjust = (1 << uchar_bit) - self_uchar("THRESHOLD");
     crc16  = 0;
     loc    = 0;
     total  = 0;
     while ( total < stash->original_size ) {
       c = decode_c(stash);
-      if (c <= UCHAR_MAX) {
+      if (c <= uchar_max) {
         queue[loc++] = c;
         if (loc == dicsize) {
           output(stash, queue, dicsize);
@@ -545,7 +545,7 @@ PROTOTYPES: DISABLE
 #/* this is not from LHa for UNIX */
 
 unsigned short
-xs_update(unsigned short crc, SV * str, unsigned int len)
+xs_update(unsigned short crc, SV * str, int len)
   CODE:
     RETVAL = calc_crc16(crc, SvPV(str, len), len);
 

@@ -1,5 +1,13 @@
 Revision history for Archive-Lha
 
+0.03_01 2008/05/30
+  - now explicitly requires 5.8.1 to support :raw open
+  - bumped up the version req of Test::UseAllModules to 0.09
+  - added diagnostic message to know what's going on under
+    the "darwin-2level" (and solaris)
+  - try to silence some of the known warnings (though with
+    quite an ugly way; should do this more elegantly)
+
 0.03 2008/04/28
   - applied a patch from Yukio USUDA to fix level 1 header handling.
   - added 'known limitation' section to note the slowness.

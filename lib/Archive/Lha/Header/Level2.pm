@@ -13,7 +13,7 @@ sub new {
   my $size  = _short( split '', $stream->read(2) );
 
   croak "Header is broken: size is null" unless $size;
-  croak "Header is too large" if $size > 4096;
+  croak "Header is too large: $size" if $size > 4096;
 
   $stream->seek( $start );
   my @bits = split '', $stream->read( $size );

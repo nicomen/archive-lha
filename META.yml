@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Archive-Lha
-version:             0.03
+version:             0.03_01
 abstract:            extract .LZH archives
 license:             perl
 author:              
@@ -19,7 +19,7 @@ requires:
     List::Util:                    0
     Log::Dispatch:                 0
     Test::More:                    0.47
-    Test::UseAllModules:           0
+    Test::UseAllModules:           0.09
     Time::Piece:                   0
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html
