@@ -10,8 +10,8 @@ our @EXPORT = qw(
   _int _short _dostime2utime _os_id _extended_header
 );
 
-sub _int   { unpack 'I', ( pack 'aaaa', @_ ) }
-sub _short { unpack 'S', ( pack 'aa', @_ ) }
+sub _int   { unpack 'V', ( pack 'aaaa', @_ ) }
+sub _short { unpack 'v', ( pack 'aa', @_ ) }
 
 sub _dostime2utime {
   my ($year, $mon, $day, $hour, $min, $sec) =

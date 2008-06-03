@@ -1,5 +1,8 @@
 Revision history for Archive-Lha
 
+0.03_02 2008/06/04
+  - try to fix the endianness
+
 0.03_01 2008/05/30
   - now explicitly requires 5.8.1 to support :raw open
   - bumped up the version req of Test::UseAllModules to 0.09
