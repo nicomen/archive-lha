@@ -137,7 +137,7 @@ init_bitstream(LhaStash * stash)
 {
   LhaBitstream  * bitstream;
 
-  Newxz(bitstream, sizeof(LhaBitstream), LhaBitstream);
+  Newxz(bitstream, 1, LhaBitstream);
   stash->bit = bitstream;
 
   stash->bit->blocksize = 0;
@@ -424,9 +424,9 @@ init_tables(HV * self, LhaStash * stash)
   stash->TBIT = self_uchar("TBIT");
   stash->CBIT = self_uchar("CBIT");
 
-  Newxz(pt_table, sizeof(LhaTable), LhaTable);
-  Newxz(c_table,  sizeof(LhaTable), LhaTable);
-  Newxz(tree,     sizeof(LhaTree),  LhaTree);
+  Newxz(pt_table, 1, LhaTable);
+  Newxz(c_table,  1, LhaTable);
+  Newxz(tree,     1, LhaTree);
 
   pt_table->bit         = self_uchar("PT_TABLE_BIT");
   pt_table->size        = self_ushort("PT_TABLE_SIZE");
@@ -484,7 +484,7 @@ xs_decode(hashref)
     dicsize1 = dicsize - 1;
 
     Newxz(queue, dicsize, unsigned char);
-    Newxz(stash, sizeof(LhaStash), LhaStash);
+    Newxz(stash, 1, LhaStash);
 
     stash->queue = queue;
 
