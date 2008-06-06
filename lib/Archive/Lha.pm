@@ -3,7 +3,7 @@ package Archive::Lha;
 use strict;
 use warnings;
 
-our $VERSION = '0.03_03';
+our $VERSION = '0.03_04';
 
 require XSLoader;
 XSLoader::load('Archive::Lha', $VERSION);

@@ -1,5 +1,8 @@
 Revision history for Archive-Lha
 
+0.03_04 2008/06/06
+  - eol conversion was silently reverted by svn... how nice
+
 0.03_03 2008/06/06
   - converted eol characters to satisfy a picky compiler
   - updated ppport.h to 3.14
