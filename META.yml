@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Archive-Lha
-version:             0.03_04
+version:             0.04
 abstract:            extract .LZH archives
 license:             perl
 author:              

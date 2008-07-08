@@ -1,5 +1,8 @@
 Revision history for Archive-Lha
 
+0.04 2008/07/08
+  - no code changes. just to clear developer's only state.
+
 0.03_04 2008/06/06
   - eol conversion was silently reverted by svn... how nice
 
