@@ -1,5 +1,8 @@
 Revision history for Archive-Lha
 
+0.05 2008/12/19
+  - plha has been broken (spotted by Daisuke Murase++)
+
 0.04 2008/07/08
   - no code changes. just to clear developer's only state.
 

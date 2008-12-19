@@ -64,10 +64,10 @@ my $controller = +{
     },
 };
 
-our $command_map = {
+our %command_map = (
     t => 'table',
     x => 'extract',
-};
+);
 
 &main;exit;
 
