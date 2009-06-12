@@ -71,7 +71,8 @@ sub dirname {
 
 sub _conv_sep {
   my $path = shift;
-  $path =~ s{0xff}{/}g;
+
+  $path =~ s{\xff}{/}g;
   return $path;
 }
 

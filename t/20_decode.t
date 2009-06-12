@@ -22,6 +22,10 @@ sub test {
       stream => $stream
     );
     $stream->seek( $header->data_top );
+
+    my $pathname = $header->pathname;
+    ok $pathname !~ m{\xff}, '\xff-free';
+
     my $decoded = '';
     my $decoder = Archive::Lha::Decode->new(
       header => $header,

@@ -1,5 +1,8 @@
 Revision history for Archive-Lha
 
+0.06 2009/06/12
+  - fixed wrong path separator (Daisuke Komatsu)
+
 0.05 2008/12/19
   - plha has been broken (spotted by Daisuke Murase++)
 
