@@ -545,7 +545,7 @@ PROTOTYPES: DISABLE
 #/* this is not from LHa for UNIX */
 
 unsigned short
-xs_update(unsigned short crc, SV * str, int len)
+xs_update(unsigned short crc, SV * str, STRLEN len)
   CODE:
     RETVAL = calc_crc16(crc, SvPV(str, len), len);
 
