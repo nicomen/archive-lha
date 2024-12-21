@@ -35,7 +35,7 @@ void
 safe_croak(LhaStash * stash, char * dying_message)
 {
   destroy_stash(stash);
-  croak(dying_message);
+  croak("%s", dying_message);
 }
 
 void
