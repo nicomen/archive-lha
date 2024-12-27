@@ -1,20 +1,27 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+
+use Encode;
 use FindBin;
 use File::Spec;
 use File::Basename;
 use File::Path;
 use lib File::Spec->catfile($FindBin::Bin, '..', 'lib');
+
 use Archive::Lha::Decode;
 use Archive::Lha::Header;
 use Archive::Lha::Stream::File;
 use Carp;
+use Time::Moment;
 
 my $controller = +{
-    table => sub {
+    v => sub {
+        my $contents = '';
         my $fname = shift or usage();
         my $stream = open_archive($fname);
+        print "Original  Packed Ratio    Date     Time    Name\n";
+        print "-------- ------- ----- --------- --------  -------------\n";
         while ( defined( my $level = $stream->search_header ) ) {
             my $header = Archive::Lha::Header->new(
                 level  => $level,
@@ -29,10 +36,19 @@ my $controller = +{
                 write  => sub { $decoded .= join '', @_ },
             );
             $decoder->decode;
-            print $header->pathname,"\n";
+
+            my $method = $header->{method};
+            $method = 'lhd' if (!$header->{original_size} && !$header->{encoded_size} && ($header->{os}->[0] eq 'a') && ($header->{method} eq 'lh0'));
+            printf "%8d %7d%5.1f%% %s %s  %s\n",
+              $header->{original_size},
+              $header->{encoded_size},
+              (($header->{encoded_size} && $header->{original_size}) ? 100 * ($header->{original_size} - $header->{encoded_size}) / $header->{original_size} : 0),
+              Time::Moment->from_epoch($header->{timestamp})->strftime("%y-%b-%d"),
+              Time::Moment->from_epoch($header->{timestamp})->strftime("%T"),
+              Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
         }
     },
-    extract => sub {
+    x => sub {
         my $fname = shift or usage();
         my %target;
         if (@_) {
@@ -80,7 +96,7 @@ sub main {
 }
 
 sub usage {
-    die "Usage: $0 (table|extract) archive (files)\n";
+    die "Usage: $0 (v|x) archive (files)\n";
 }
 
 sub open_archive {
@@ -108,11 +124,11 @@ plha - command line tool to extract .lzh archive
 =head1 SYNOPSIS
 
   # From the command line
-  > plha table archive.lzh
-  > plha extract archive.lzh
+  > plha v archive.lzh
+  > plha x archive.lzh
 
   # if you want to extract a specific file from the archive
-  > plha extract archive.lzh pathname_in_the_archive
+  > plha x archive.lzh pathname_in_the_archive
 
 =head1 DESCRIPTION
 
