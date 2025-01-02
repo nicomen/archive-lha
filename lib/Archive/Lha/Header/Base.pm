@@ -38,6 +38,9 @@ sub pathname {
   elsif ( $self->{filename} ) {
     $path = _conv_sep( $self->{filename} );
   }
+  elsif ( $self->{directory} ) {
+    $path = _conv_sep( $self->{directory} . '/' );
+  }
 
   # avoid traversal
   if ( File::Spec->file_name_is_absolute( $path ) ) {
@@ -49,7 +52,7 @@ sub pathname {
     if ( lc $from eq 'guess' ) {
       require Encode::Guess;
       my $enc = Encode::Guess::guess_encoding(
-        $path => qw( cp932 euc-jp )
+        $path => qw( latin1 latin2 cp932 euc-jp )
       );
       if ( ref $enc ) {
         Encode::from_to( $path, $enc->name, $to );
@@ -73,6 +76,7 @@ sub _conv_sep {
   my $path = shift;
 
   $path =~ s{\xff}{/}g;
+  $path =~ s{\\}{/}g;
   return $path;
 }
 
