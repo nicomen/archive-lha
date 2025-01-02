@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+use Data::Dumper;
 use Encode;
 use FindBin;
 use File::Spec;
@@ -16,6 +17,27 @@ use Carp;
 use Time::Moment;
 
 my $controller = +{
+    d => sub {
+        my $fname = shift or usage();
+        my $stream = open_archive($fname);
+        while ( defined( my $level = $stream->search_header ) ) {
+            my $header = Archive::Lha::Header->new(
+                level  => $level,
+                stream => $stream
+            );
+            $stream->seek( $header->data_top );
+
+            my $decoded = '';
+            my $decoder = Archive::Lha::Decode->new(
+                header => $header,
+                read   => sub { $stream->read(@_) },
+                write  => sub { $decoded .= join '', @_ },
+            );
+            $decoder->decode;
+            warn Dumper($header);
+        }
+
+    },
     v => sub {
         my $contents = '';
         my $fname = shift or usage();
@@ -108,7 +130,7 @@ sub main {
 }
 
 sub usage {
-    die "Usage: $0 (v|x) archive (files)\n";
+    die "Usage: $0 (v|x|d) archive (files)\n v - verbose view of contents\n x - extract archive\n d - dump each header";
 }
 
 sub open_archive {
