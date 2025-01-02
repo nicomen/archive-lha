@@ -114,17 +114,10 @@ my $controller = +{
     },
 };
 
-our %command_map = (
-    t => 'table',
-    x => 'extract',
-);
-
 &main;exit;
 
 sub main {
     my $cmd = shift @ARGV or usage();
-
-    $cmd = $command_map{$cmd} if exists $command_map{$cmd};
 
     $controller->{$cmd}->(@ARGV);
 }
