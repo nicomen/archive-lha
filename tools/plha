@@ -34,7 +34,7 @@ my $controller = +{
                 write  => sub { $decoded .= join '', @_ },
             );
             $decoder->decode;
-            warn Dumper($header);
+            print Dumper($header);
         }
 
     },
@@ -82,6 +82,60 @@ my $controller = +{
              Time::Moment->from_epoch((stat($fname))[9])->strftime("%T"),
              (sprintf(" %d files", $totals->{count}));
     },
+    t => sub {
+        my $fname = shift or usage();
+        printf "Testing integrity of archive '%s':\n", $fname;
+        my $stream = open_archive($fname);
+        my $totals = { original_size => 0, encoded_size => 0, count => 0 };
+        while ( defined( my $level = $stream->search_header ) ) {
+            my $header = Archive::Lha::Header->new(
+                level  => $level,
+                stream => $stream
+            );
+            $stream->seek( $header->data_top );
+
+            my $decoded = '';
+            my $decoder = Archive::Lha::Decode->new(
+                header => $header,
+                read   => sub { $stream->read(@_) },
+                write  => sub { $decoded .= join '', @_ },
+            );
+            $decoder->decode;
+
+            $totals->{original_size} += $header->{original_size};
+            $totals->{encoded_size}  += $header->{encoded_size};
+            $totals->{count}         += 1;
+            printf "    Testing: (%8d/%8d)  %s\n", $header->{original_size}, $header->{original_size}, Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+        }
+        my $error = undef;
+        if ($totals->{count}) {
+            if (!$error) {
+              printf "%d files tested, all files OK\n", $totals->{count};
+            }
+        } else {
+            $error = 1;
+            printf "No files tested.\n";
+        }
+        if ($error) {
+            printf "\nOperation not entirely successful\n\n";
+        } else {
+            printf "\nOperation succesful\n\n";
+        }
+=pod
+     WARNING: Skipping corrupt/extraneous data
+No files tested.
+
+Operation not entirely successful
+
+---
+    Testing: (   12345/   12345)  file-name
+    …
+129 files tested, all files OK
+
+Operation successful
+
+=cut
+    },
     x => sub {
         my $fname = shift or usage();
         my %target;
@@ -107,7 +161,7 @@ my $controller = +{
                 write  => sub { $decoded .= join '', @_ },
             );
             my $crc = $decoder->decode;
-            croak "crc mismatch" if $crc != $header->crc16;
+            die "crc mismatch" if $crc != $header->crc16;
 
             write_all($header->pathname, $decoded);
         }
@@ -118,17 +172,18 @@ my $controller = +{
 
 sub main {
     my $cmd = shift @ARGV or usage();
-
-    $controller->{$cmd}->(@ARGV);
+    my $file = shift @ARGV or usage();
+    check_magic($file);
+    $controller->{$cmd}->($file, @ARGV);
 }
 
 sub usage {
-    die "Usage: $0 (v|x|d) archive (files)\n v - verbose view of contents\n x - extract archive\n d - dump each header";
+    die "Usage: $0 (v|x|t|d) archive (files)\n v - verbose view of contents\n x - extract archive\n t - test file\n d - dump each header";
 }
 
 sub open_archive {
     my $fname = shift;
-    croak "fname missing" unless $fname;
+    die "fname missing" unless $fname;
     Archive::Lha::Stream::File->new(file => $fname);
 }
 
@@ -136,10 +191,20 @@ sub write_all {
     my ($fname, $data) = @_;
     my $dir = dirname($fname);
     mkpath $dir unless -d $dir;
-    open my $fh, '>:raw', $fname or croak $!;
+    open my $fh, '>:raw', $fname or die $!;
     binmode $fh;
     print $fh $data;
     close $fh;
+}
+
+sub check_magic {
+    my $fname = shift;
+    open my $fh, '<:raw', $fname;
+    binmode $fh;
+    my $magic;
+    my $chars = read($fh,$magic,5);
+    my ($signature) = unpack("x2a3", $magic);
+    die 'Does not look like an LHa file' unless $signature eq "-lh";
 }
 
 __END__
