@@ -239,6 +239,18 @@ sub usage {
     die "Usage: $0 (l|lv|v|vv|x|t|d) archive (files)\n l  - list contents (lhasa l format)\n lv - list contents (lhasa v format)\n v  - list archive verbose (LhA v format)\n vv - list archive full (LhA vv format)\n x  - extract archive\n t  - test file\n d  - dump each header\n";
 }
 
+# ls-style date: show time if within ~6 months, year otherwise
+sub _ls_stamp {
+    my ($epoch) = @_;
+    my $now = time;
+    my $six_months = 180 * 86400;
+    my $tm = Time::Moment->from_epoch($epoch);
+    if (abs($now - $epoch) < $six_months) {
+        return $tm->strftime("%b %e %H:%M");
+    }
+    return $tm->strftime("%b %e  %Y");
+}
+
 # Lhasa-compatible listing (l = terse, lv = verbose with method+crc)
 sub _list_lhasa {
     my ($fname, $mode) = @_;
@@ -274,7 +286,7 @@ sub _list_lhasa {
 
         my $ratio = $header->{original_size}
             ? 100 * $header->{encoded_size} / $header->{original_size} : 0;
-        my $stamp = Time::Moment->from_epoch($header->{timestamp})->strftime("%b %e  %Y");
+        my $stamp = _ls_stamp($header->{timestamp});
         my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
 
         if ($mode eq 'lv') {
@@ -303,7 +315,7 @@ sub _list_lhasa {
 
     my $ratio = $totals->{original_size}
         ? 100 * $totals->{encoded_size} / $totals->{original_size} : 0;
-    my $stamp = Time::Moment->from_epoch((stat($fname))[9])->strftime("%b %e  %Y");
+    my $stamp = _ls_stamp((stat($fname))[9]);
 
     if ($mode eq 'lv') {
         printf " Total        %2d files %7d %7d %5.1f%% %s\n",
