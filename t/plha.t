@@ -34,6 +34,8 @@ subtest 'plha lv (lhasa v format)' => sub {
     like $output, qr/-lh\d-/, 'Shows compression method';
     like $output, qr/[0-9a-f]{4}/, 'Shows CRC';
     like $output, qr/Total\s+\d+ files/, 'Has file count footer';
+    # Total line should have spacing for METHOD+CRC columns between ratio and date
+    like $output, qr/Total.+\d+\.\d+%\s{12}\w{3}/, 'Total line has padding for METHOD+CRC columns';
 };
 
 subtest 'plha vv (LhA vv format)' => sub {
