@@ -26,14 +26,7 @@ my $controller = +{
                 stream => $stream
             );
             $stream->seek( $header->data_top );
-
-            my $decoded = '';
-            my $decoder = Archive::Lha::Decode->new(
-                header => $header,
-                read   => sub { $stream->read(@_) },
-                write  => sub { $decoded .= join '', @_ },
-            );
-            $decoder->decode;
+            _decode_entry($header, $stream);
             print Dumper($header);
         }
 
@@ -59,20 +52,11 @@ my $controller = +{
                 stream => $stream
             );
             $stream->seek( $header->data_top );
-
-            my $decoded = '';
-            my $decoder = Archive::Lha::Decode->new(
-                header => $header,
-                read   => sub { $stream->read(@_) },
-                write  => sub { $decoded .= join '', @_ },
-            );
-            $decoder->decode;
+            _decode_entry($header, $stream);
 
             $totals->{original_size} += $header->{original_size};
             $totals->{encoded_size}  += $header->{encoded_size};
             $totals->{count}         += 1;
-#            my $method = $header->{method};
-#            $method = 'lhd' if (!$header->{original_size} && !$header->{encoded_size} && ($header->{os}->[0] eq 'a') && ($header->{method} eq 'lh0'));
             printf "%8d %7d%5.1f%% %s %s  %s\n",
               $header->{original_size},
               $header->{encoded_size},
@@ -102,14 +86,7 @@ my $controller = +{
                 stream => $stream
             );
             $stream->seek( $header->data_top );
-
-            my $decoded = '';
-            my $decoder = Archive::Lha::Decode->new(
-                header => $header,
-                read   => sub { $stream->read(@_) },
-                write  => sub { $decoded .= join '', @_ },
-            );
-            $decoder->decode;
+            _decode_entry($header, $stream);
 
             $totals->{original_size} += $header->{original_size};
             $totals->{encoded_size}  += $header->{encoded_size};
@@ -151,14 +128,7 @@ my $controller = +{
                 stream => $stream
             );
             $stream->seek( $header->data_top );
-
-            my $decoded = '';
-            my $decoder = Archive::Lha::Decode->new(
-                header => $header,
-                read   => sub { $stream->read(@_) },
-                write  => sub { $decoded .= join '', @_ },
-            );
-            $decoder->decode;
+            _decode_entry($header, $stream);
 
             $totals->{original_size} += $header->{original_size};
             $totals->{encoded_size}  += $header->{encoded_size};
@@ -212,13 +182,12 @@ Operation successful
             }
             $stream->seek( $header->data_top );
 
-            my $decoded = '';
-            my $decoder = Archive::Lha::Decode->new(
-                header => $header,
-                read   => sub { $stream->read(@_) },
-                write  => sub { $decoded .= join '', @_ },
-            );
-            my $crc = $decoder->decode;
+            if (_is_directory($header)) {
+                mkpath $header->pathname unless -d $header->pathname;
+                next;
+            }
+
+            my ($decoded, $crc) = _decode_entry($header, $stream);
             die "crc mismatch" if $crc != $header->crc16;
 
             write_all($header->pathname, $decoded);
@@ -271,14 +240,7 @@ sub _list_lhasa {
             stream => $stream
         );
         $stream->seek( $header->data_top );
-
-        my $decoded = '';
-        my $decoder = Archive::Lha::Decode->new(
-            header => $header,
-            read   => sub { $stream->read(@_) },
-            write  => sub { $decoded .= join '', @_ },
-        );
-        $decoder->decode;
+        _decode_entry($header, $stream);
 
         $totals->{original_size} += $header->{original_size};
         $totals->{encoded_size}  += $header->{encoded_size};
@@ -331,6 +293,21 @@ sub _list_lhasa {
             $ratio,
             $stamp;
     }
+}
+
+sub _is_directory { $_[0]->{method} eq 'lhd' }
+
+sub _decode_entry {
+    my ($header, $stream) = @_;
+    return ('', 0) if _is_directory($header);
+    my $decoded = '';
+    my $decoder = Archive::Lha::Decode->new(
+        header => $header,
+        read   => sub { $stream->read(@_) },
+        write  => sub { $decoded .= join '', @_ },
+    );
+    my $crc = $decoder->decode;
+    return ($decoded, $crc);
 }
 
 sub open_archive {
