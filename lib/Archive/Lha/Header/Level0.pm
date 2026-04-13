@@ -36,6 +36,7 @@ sub new {
 
   my $pathname_length = ord( $bits[21] );
   $header{pathname}   = join '', @bits[22..(21 + $pathname_length)];
+  $header{pathname}   =~ s/\0.*//s;  # Truncate at null byte
   $header{crc16}      = _short( @bits[(22 + $pathname_length)..(23 + $pathname_length)] );
 
   my $extended_from = 24 + $pathname_length;
