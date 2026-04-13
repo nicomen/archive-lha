@@ -23,7 +23,7 @@ sub search_header {
   my $pos   = $self->tell;
   until ( $self->eof ) {
     $str .= $self->read(1024);
-    my ($method, $level) = $str =~ /.{2}\-(lh[0567])\-.{13}(.)/s;
+    my ($method, $level) = $str =~ /.{2}\-(lh[0-9a-z]|lzs|lz[45]|pm[012])\-.{13}(.)/s;
     if ( defined $level ) {
       $level = ord( $level );
       if ( $method && $level =~ /^(?:[0-2])$/) {

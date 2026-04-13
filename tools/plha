@@ -25,8 +25,7 @@ my $controller = +{
                 level  => $level,
                 stream => $stream
             );
-            $stream->seek( $header->data_top );
-            _decode_entry($header, $stream);
+            $stream->seek( $header->{next_header} );
             print Dumper($header);
         }
 
@@ -51,8 +50,7 @@ my $controller = +{
                 level  => $level,
                 stream => $stream
             );
-            $stream->seek( $header->data_top );
-            _decode_entry($header, $stream);
+            $stream->seek( $header->{next_header} );
 
             $totals->{original_size} += $header->{original_size};
             $totals->{encoded_size}  += $header->{encoded_size};
@@ -85,8 +83,7 @@ my $controller = +{
                 level  => $level,
                 stream => $stream
             );
-            $stream->seek( $header->data_top );
-            _decode_entry($header, $stream);
+            $stream->seek( $header->{next_header} );
 
             $totals->{original_size} += $header->{original_size};
             $totals->{encoded_size}  += $header->{encoded_size};
@@ -129,6 +126,7 @@ my $controller = +{
             );
             $stream->seek( $header->data_top );
             _decode_entry($header, $stream);
+            $stream->seek( $header->{next_header} );
 
             $totals->{original_size} += $header->{original_size};
             $totals->{encoded_size}  += $header->{encoded_size};
@@ -184,10 +182,12 @@ Operation successful
 
             if (_is_directory($header)) {
                 mkpath $header->pathname unless -d $header->pathname;
+                $stream->seek( $header->{next_header} );
                 next;
             }
 
             my ($decoded, $crc) = _decode_entry($header, $stream);
+            $stream->seek( $header->{next_header} );
             die "crc mismatch" if $crc != $header->crc16;
 
             write_all($header->pathname, $decoded);
@@ -239,8 +239,8 @@ sub _list_lhasa {
             level  => $level,
             stream => $stream
         );
-        $stream->seek( $header->data_top );
-        _decode_entry($header, $stream);
+        # Skip to next header - no need to decode for listing
+        $stream->seek( $header->{next_header} );
 
         $totals->{original_size} += $header->{original_size};
         $totals->{encoded_size}  += $header->{encoded_size};
