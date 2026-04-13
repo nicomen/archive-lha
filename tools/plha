@@ -287,15 +287,17 @@ sub _list_lhasa {
     my $stamp = _ls_stamp((stat($fname))[9]);
 
     if ($mode eq 'lv') {
-        printf " Total  %8d files %7d %7d %5.1f%%            %s\n",
-            $totals->{count},
+        my $file_str = $totals->{count} == 1 ? 'file ' : 'files';
+        printf " Total  %5d %s %7d %7d %5.1f%%            %s\n",
+            $totals->{count}, $file_str,
             $totals->{encoded_size},
             $totals->{original_size},
             $ratio,
             $stamp;
     } else {
-        printf " Total  %8d files %7d %5.1f%% %s\n",
-            $totals->{count},
+        my $file_str = $totals->{count} == 1 ? 'file ' : 'files';
+        printf " Total  %5d %s %7d %5.1f%% %s\n",
+            $totals->{count}, $file_str,
             $totals->{original_size},
             $ratio,
             $stamp;
