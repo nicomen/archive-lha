@@ -63,11 +63,15 @@ sub _extended_header {
   }
   elsif ( $type == 0x01 ) {
     my $to = scalar @bits - 3;
-    $hash{filename} = join '', @bits[1..$to];
+    my $name = join '', @bits[1..$to];
+    $name =~ s/\0.*//s;  # Truncate at null byte
+    $hash{filename} = $name;
   }
   elsif ( $type == 0x02 ) {
     my $to = scalar @bits - 3;
-    $hash{directory} = join '', @bits[1..$to];
+    my $dir = join '', @bits[1..$to];
+    $dir =~ s/\0.*//s;  # Truncate at null byte
+    $hash{directory} = $dir;
   }
   elsif ( $type == 0x39 ) {
     # Multi-disc header can be ignored.

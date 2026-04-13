@@ -36,6 +36,7 @@ sub new {
 
   my $filename_length = ord( $bits[21] );
   $header{filename}   = join '', @bits[22..(21 + $filename_length)];
+  $header{filename}   =~ s/\0.*//s;  # Truncate at null byte
   $header{crc16}      = _short( @bits[(22 + $filename_length)..(23 + $filename_length)] );
   $header{os}         = _os_id( $bits[(24 + $filename_length)] );
 
