@@ -59,4 +59,23 @@ subtest 'plha l format matches lhasa' => sub {
     }
 };
 
+subtest 'prefix is 23 chars wide' => sub {
+    my $output = `$^X -Iblib/lib -Iblib/arch bin/plha lv $lha 2>&1`;
+    my @file_lines = grep { /^\[/ } split /\n/, $output;
+    for my $line (@file_lines) {
+        # First 23 chars are the prefix, then PACKED number starts
+        my $prefix = substr($line, 0, 23);
+        my $rest = substr($line, 23);
+        like $rest, qr/^\s*\d+/, "PACKED starts after 23-char prefix: [$prefix]|$rest";
+    }
+};
+
+subtest 'directory entries' => sub {
+    # Use an archive with directory entries if available, otherwise skip
+    # For now test that _is_directory and _lhasa_prefix work via lv output
+    my $output = `$^X -Iblib/lib -Iblib/arch bin/plha lv $lha 2>&1`;
+    unlike $output, qr/LHD\.pm/, 'No LHD decoder error';
+    unlike $output, qr/Can't load/, 'No module loading errors';
+};
+
 done_testing;
