@@ -16,18 +16,28 @@ subtest 'plha v' => sub {
     like $output, qr/\d+ files$/, 'Has file count footer';
 };
 
-subtest 'plha l' => sub {
+subtest 'plha l (lhasa l format)' => sub {
     my $output = `$^X -Iblib/lib -Iblib/arch bin/plha l $lha 2>&1`;
     like $output, qr/MemLeakZ/, 'plha l lists archive contents';
     unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
     like $output, qr/^\s*PERMSSN/m, 'Has lhasa-style header';
     like $output, qr/\[Amiga\]/, 'Has [Amiga] prefix on file entries';
     like $output, qr/Total\s+\d+ files/, 'Has file count footer';
+    unlike $output, qr/METHOD/, 'l format does not have METHOD column';
+};
+
+subtest 'plha vv (lhasa v format)' => sub {
+    my $output = `$^X -Iblib/lib -Iblib/arch bin/plha vv $lha 2>&1`;
+    like $output, qr/MemLeakZ/, 'plha vv lists archive contents';
+    like $output, qr/^\s*PERMSSN.*METHOD.*CRC/m, 'Has lhasa v header with METHOD and CRC';
+    like $output, qr/\[Amiga\]/, 'Has [Amiga] prefix on file entries';
+    like $output, qr/-lh\d-/, 'Shows compression method';
+    like $output, qr/[0-9a-f]{4}/, 'Shows CRC';
+    like $output, qr/Total\s+\d+ files/, 'Has file count footer';
 };
 
 subtest 'plha l format matches lhasa' => sub {
     my $output = `$^X -Iblib/lib -Iblib/arch bin/plha l $lha 2>&1`;
-    # Each file line should match: [Amiga]  <spaces>  SIZE  RATIO%  STAMP  NAME
     my @file_lines = grep { /^\[Amiga\]/ } split /\n/, $output;
     ok scalar @file_lines > 0, 'Has file entries';
     for my $line (@file_lines) {
