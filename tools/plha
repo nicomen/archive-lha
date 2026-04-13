@@ -317,7 +317,8 @@ sub _lhasa_prefix {
         }
         my $uid = $header->{unix_uid} // 0;
         my $gid = $header->{unix_gid} // 0;
-        return sprintf "%-10s %5d/%-5d", $str, $uid, $gid;
+        my $id_str = "$uid/$gid";
+        return $str . '  ' . sprintf("%-11s", $id_str);
     }
     return sprintf "%-23s", '[' . ($header->{os}[1] // 'generic') . ']';
 }
