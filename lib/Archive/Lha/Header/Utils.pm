@@ -46,6 +46,7 @@ sub _os_id {
   return [ R => 'Runser' ]    if $hex == 0x52;
   return [ T => 'TownsOS' ]   if $hex == 0x54;
   return [ X => 'XOSK' ]      if $hex == 0x58;
+  return [ a => 'Amiga' ];
   return [ u => 'unknown' ];
 }
 
@@ -87,13 +88,18 @@ sub _extended_header {
     # Windows attribute? header; ignored temporarily
   }
   elsif ( $type == 0x50 ) {
-    # Permission (for unix) header; ignored temporarily
+    # Unix permission header (2 bytes, little-endian mode_t)
+    $hash{unix_perm} = _short( @bits[1..2] );
   }
   elsif ( $type == 0x51 ) {
-    # UID/GID (for unix) header; can be ignored?
+    # Unix UID/GID header (2 bytes GID + 2 bytes UID)
+    $hash{unix_gid} = _short( @bits[1..2] );
+    $hash{unix_uid} = _short( @bits[3..4] );
   }
   elsif ( $type == 0x52 ) {
-    # Group (for unix) header; can be ignored?
+    # Unix group name header
+    my $to = scalar @bits - 3;
+    $hash{unix_group} = join '', @bits[1..$to];
   }
   elsif ( $type == 0x54 ) {
     $hash{timestamp} = _int( @bits[1..4] );

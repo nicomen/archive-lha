@@ -250,9 +250,11 @@ sub _list_lhasa {
             ? 100 * $header->{encoded_size} / $header->{original_size} : 0;
         my $stamp = _ls_stamp($header->{timestamp});
         my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+        my $prefix = _lhasa_prefix($header);
 
         if ($mode eq 'lv') {
-            printf "[Amiga]                %7d %7d %5.1f%% -%s- %04x %s %s\n",
+            printf "%s%7d %7d %5.1f%% -%s- %04x %s %s\n",
+                $prefix,
                 $header->{encoded_size},
                 $header->{original_size},
                 $ratio,
@@ -261,7 +263,8 @@ sub _list_lhasa {
                 $stamp,
                 $name;
         } else {
-            printf "[Amiga]                %7d %5.1f%% %s %s\n",
+            printf "%s%7d %5.1f%% %s %s\n",
+                $prefix,
                 $header->{original_size},
                 $ratio,
                 $stamp,
@@ -296,6 +299,26 @@ sub _list_lhasa {
 }
 
 sub _is_directory { $_[0]->{method} eq 'lhd' }
+
+# Format permission/owner prefix like lhasa does
+sub _lhasa_prefix {
+    my ($header) = @_;
+    if (defined $header->{unix_perm}) {
+        my $perm = $header->{unix_perm};
+        my $type = _is_directory($header) ? 'd' : '-';
+        my $str = $type;
+        for my $shift (6, 3, 0) {
+            my $bits = ($perm >> $shift) & 7;
+            $str .= ($bits & 4) ? 'r' : '-';
+            $str .= ($bits & 2) ? 'w' : '-';
+            $str .= ($bits & 1) ? 'x' : '-';
+        }
+        my $uid = $header->{unix_uid} // 0;
+        my $gid = $header->{unix_gid} // 0;
+        return sprintf "%-10s %5d/%-5d", $str, $uid, $gid;
+    }
+    return sprintf "%-23s", '[' . ($header->{os}[1] // 'generic') . ']';
+}
 
 sub _decode_entry {
     my ($header, $stream) = @_;
