@@ -246,27 +246,29 @@ sub _list_lhasa {
         $totals->{encoded_size}  += $header->{encoded_size};
         $totals->{count}         += 1;
 
-        my $ratio = $header->{original_size}
-            ? 100 * $header->{encoded_size} / $header->{original_size} : 0;
         my $stamp = _ls_stamp($header->{timestamp});
         my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+        $name .= '/' if _is_directory($header) && $name !~ m{/$};
         my $prefix = _lhasa_prefix($header);
+        my $ratio_str = _is_directory($header) ? '******'
+            : sprintf("%5.1f%%", $header->{original_size}
+                ? 100 * $header->{encoded_size} / $header->{original_size} : 0);
 
         if ($mode eq 'lv') {
-            printf "%s%7d %7d %5.1f%% -%s- %04x %s %s\n",
+            printf "%s%8d %7d %s -%s- %04x %s %s\n",
                 $prefix,
                 $header->{encoded_size},
                 $header->{original_size},
-                $ratio,
+                $ratio_str,
                 $header->{method},
                 $header->{crc16},
                 $stamp,
                 $name;
         } else {
-            printf "%s%7d %5.1f%% %s %s\n",
+            printf "%s%7d %s %s %s\n",
                 $prefix,
                 $header->{original_size},
-                $ratio,
+                $ratio_str,
                 $stamp,
                 $name;
         }
@@ -283,7 +285,7 @@ sub _list_lhasa {
     my $stamp = _ls_stamp((stat($fname))[9]);
 
     if ($mode eq 'lv') {
-        printf " Total        %2d files %7d %7d %5.1f%%            %s\n",
+        printf " Total        %2d files %8d %7d %5.1f%%            %s\n",
             $totals->{count},
             $totals->{encoded_size},
             $totals->{original_size},
