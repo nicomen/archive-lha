@@ -178,7 +178,7 @@ sub main {
 }
 
 sub usage {
-    die "Usage: $0 (v|x|t|d) archive (files)\n v - verbose view of contents\n x - extract archive\n t - test file\n d - dump each header";
+    die "Usage: $0 (v|x|t|d) archive (files)\n v - verbose view of contents\n x - extract archive\n t - test file\n d - dump each header\n";
 }
 
 sub open_archive {
