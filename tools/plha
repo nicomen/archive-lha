@@ -42,9 +42,9 @@ my $controller = +{
         my $fname = shift or usage();
         _list_lhasa($fname, 'l');
     },
-    vv => sub {
+    lv => sub {
         my $fname = shift or usage();
-        _list_lhasa($fname, 'vv');
+        _list_lhasa($fname, 'lv');
     },
     v => sub {
         my $contents = '';
@@ -80,6 +80,56 @@ my $controller = +{
               Time::Moment->from_epoch($header->{timestamp})->strftime("%d-%b-%y"),
               Time::Moment->from_epoch($header->{timestamp})->strftime("%T"),
               Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+        }
+        print "-------- ------- ----- --------- --------\n";
+        printf "%8d %7d%5.1f%% %s %s  %s\n",
+             $totals->{original_size},
+             $totals->{encoded_size},
+             (($totals->{encoded_size} && $totals->{original_size}) ? 100 * ($totals->{original_size} - $totals->{encoded_size}) / $totals->{original_size} : 0),
+             Time::Moment->from_epoch((stat($fname))[9])->strftime("%d-%b-%y"),
+             Time::Moment->from_epoch((stat($fname))[9])->strftime("%T"),
+             (sprintf(" %d files", $totals->{count}));
+    },
+    vv => sub {
+        my $fname = shift or usage();
+        my $stream = open_archive($fname);
+        my $totals = { original_size => 0, encoded_size => 0, count => 0 };
+        print "Original  Packed Ratio    Date     Time     Atts   Method CRC  L OS\n";
+        print "-------- ------- ----- --------- -------- -------- ------ ---- -----\n";
+        while ( defined( my $level = $stream->search_header ) ) {
+            my $header = Archive::Lha::Header->new(
+                level  => $level,
+                stream => $stream
+            );
+            $stream->seek( $header->data_top );
+
+            my $decoded = '';
+            my $decoder = Archive::Lha::Decode->new(
+                header => $header,
+                read   => sub { $stream->read(@_) },
+                write  => sub { $decoded .= join '', @_ },
+            );
+            $decoder->decode;
+
+            $totals->{original_size} += $header->{original_size};
+            $totals->{encoded_size}  += $header->{encoded_size};
+            $totals->{count}         += 1;
+
+            my $name = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+            my $os_char = uc($header->{os}[0] // '?');
+            my $hdr_level = ref($header) =~ /Level(\d)/ ? $1 : '?';
+
+            printf "%s\n", $name;
+            printf "%8d %7d%5.1f%% %s %s ----rwed  -%s- %04x %s %s\n",
+              $header->{original_size},
+              $header->{encoded_size},
+              (($header->{encoded_size} && $header->{original_size}) ? 100 * ($header->{original_size} - $header->{encoded_size}) / $header->{original_size} : 0),
+              Time::Moment->from_epoch($header->{timestamp})->strftime("%d-%b-%y"),
+              Time::Moment->from_epoch($header->{timestamp})->strftime("%T"),
+              $header->{method},
+              $header->{crc16},
+              $hdr_level,
+              $os_char;
         }
         print "-------- ------- ----- --------- --------\n";
         printf "%8d %7d%5.1f%% %s %s  %s\n",
@@ -186,16 +236,16 @@ sub main {
 }
 
 sub usage {
-    die "Usage: $0 (l|v|x|t|d) archive (files)\n l - list contents (lhasa l format)\n v - verbose view of contents (original LhA format)\n vv - verbose view (lhasa v format, with method+crc)\n x - extract archive\n t - test file\n d - dump each header\n";
+    die "Usage: $0 (l|lv|v|vv|x|t|d) archive (files)\n l  - list contents (lhasa l format)\n lv - list contents (lhasa v format)\n v  - list archive verbose (LhA v format)\n vv - list archive full (LhA vv format)\n x  - extract archive\n t  - test file\n d  - dump each header\n";
 }
 
-# Lhasa-compatible listing (l = terse, vv = verbose with method+crc)
+# Lhasa-compatible listing (l = terse, lv = verbose with method+crc)
 sub _list_lhasa {
     my ($fname, $mode) = @_;
     my $stream = open_archive($fname);
     my $totals = { original_size => 0, encoded_size => 0, count => 0 };
 
-    if ($mode eq 'vv') {
+    if ($mode eq 'lv') {
         printf " PERMSSN    UID  GID    PACKED    SIZE  RATIO METHOD CRC     STAMP          NAME\n";
         printf "---------- ----------- ------- ------- ------ ---------- ------------ -------------\n";
     } else {
@@ -227,7 +277,7 @@ sub _list_lhasa {
         my $stamp = Time::Moment->from_epoch($header->{timestamp})->strftime("%b %e  %Y");
         my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
 
-        if ($mode eq 'vv') {
+        if ($mode eq 'lv') {
             printf "[Amiga]                %7d %7d %5.1f%% -%s- %04x %s %s\n",
                 $header->{encoded_size},
                 $header->{original_size},
@@ -245,7 +295,7 @@ sub _list_lhasa {
         }
     }
 
-    if ($mode eq 'vv') {
+    if ($mode eq 'lv') {
         printf "---------- ----------- ------- ------- ------ ---------- ------------ -------------\n";
     } else {
         printf "---------- ----------- ------- ------ ------------ --------------------\n";
@@ -255,7 +305,7 @@ sub _list_lhasa {
         ? 100 * $totals->{encoded_size} / $totals->{original_size} : 0;
     my $stamp = Time::Moment->from_epoch((stat($fname))[9])->strftime("%b %e  %Y");
 
-    if ($mode eq 'vv') {
+    if ($mode eq 'lv') {
         printf " Total        %2d files %7d %7d %5.1f%% %s\n",
             $totals->{count},
             $totals->{encoded_size},
