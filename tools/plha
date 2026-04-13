@@ -40,42 +40,11 @@ my $controller = +{
     },
     l => sub {
         my $fname = shift or usage();
-        my $stream = open_archive($fname);
-        my $totals = { original_size => 0, encoded_size => 0, count => 0 };
-        printf " PERMSSN    UID  GID      SIZE  RATIO     STAMP           NAME\n";
-        printf "---------- ----------- ------- ------ ------------ --------------------\n";
-        while ( defined( my $level = $stream->search_header ) ) {
-            my $header = Archive::Lha::Header->new(
-                level  => $level,
-                stream => $stream
-            );
-            $stream->seek( $header->data_top );
-
-            my $decoded = '';
-            my $decoder = Archive::Lha::Decode->new(
-                header => $header,
-                read   => sub { $stream->read(@_) },
-                write  => sub { $decoded .= join '', @_ },
-            );
-            $decoder->decode;
-
-            $totals->{original_size} += $header->{original_size};
-            $totals->{encoded_size}  += $header->{encoded_size};
-            $totals->{count}         += 1;
-            my $ratio = $header->{original_size} ? 100 * $header->{encoded_size} / $header->{original_size} : 0;
-            printf "[Amiga]                %7d %5.1f%% %s %s\n",
-              $header->{original_size},
-              $ratio,
-              Time::Moment->from_epoch($header->{timestamp})->strftime("%b %e  %Y"),
-              Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
-        }
-        printf "---------- ----------- ------- ------ ------------ --------------------\n";
-        my $ratio = $totals->{original_size} ? 100 * $totals->{encoded_size} / $totals->{original_size} : 0;
-        printf " Total        %2d files %7d %5.1f%% %s\n",
-             $totals->{count},
-             $totals->{original_size},
-             $ratio,
-             Time::Moment->from_epoch((stat($fname))[9])->strftime("%b %e  %Y");
+        _list_lhasa($fname, 'l');
+    },
+    vv => sub {
+        my $fname = shift or usage();
+        _list_lhasa($fname, 'vv');
     },
     v => sub {
         my $contents = '';
@@ -217,7 +186,89 @@ sub main {
 }
 
 sub usage {
-    die "Usage: $0 (l|v|x|t|d) archive (files)\n l - list contents (lhasa-compatible format)\n v - verbose view of contents\n x - extract archive\n t - test file\n d - dump each header\n";
+    die "Usage: $0 (l|v|x|t|d) archive (files)\n l - list contents (lhasa l format)\n v - verbose view of contents (original LhA format)\n vv - verbose view (lhasa v format, with method+crc)\n x - extract archive\n t - test file\n d - dump each header\n";
+}
+
+# Lhasa-compatible listing (l = terse, vv = verbose with method+crc)
+sub _list_lhasa {
+    my ($fname, $mode) = @_;
+    my $stream = open_archive($fname);
+    my $totals = { original_size => 0, encoded_size => 0, count => 0 };
+
+    if ($mode eq 'vv') {
+        printf " PERMSSN    UID  GID    PACKED    SIZE  RATIO METHOD CRC     STAMP          NAME\n";
+        printf "---------- ----------- ------- ------- ------ ---------- ------------ -------------\n";
+    } else {
+        printf " PERMSSN    UID  GID      SIZE  RATIO     STAMP           NAME\n";
+        printf "---------- ----------- ------- ------ ------------ --------------------\n";
+    }
+
+    while ( defined( my $level = $stream->search_header ) ) {
+        my $header = Archive::Lha::Header->new(
+            level  => $level,
+            stream => $stream
+        );
+        $stream->seek( $header->data_top );
+
+        my $decoded = '';
+        my $decoder = Archive::Lha::Decode->new(
+            header => $header,
+            read   => sub { $stream->read(@_) },
+            write  => sub { $decoded .= join '', @_ },
+        );
+        $decoder->decode;
+
+        $totals->{original_size} += $header->{original_size};
+        $totals->{encoded_size}  += $header->{encoded_size};
+        $totals->{count}         += 1;
+
+        my $ratio = $header->{original_size}
+            ? 100 * $header->{encoded_size} / $header->{original_size} : 0;
+        my $stamp = Time::Moment->from_epoch($header->{timestamp})->strftime("%b %e  %Y");
+        my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+
+        if ($mode eq 'vv') {
+            printf "[Amiga]                %7d %7d %5.1f%% -%s- %04x %s %s\n",
+                $header->{encoded_size},
+                $header->{original_size},
+                $ratio,
+                $header->{method},
+                $header->{crc16},
+                $stamp,
+                $name;
+        } else {
+            printf "[Amiga]                %7d %5.1f%% %s %s\n",
+                $header->{original_size},
+                $ratio,
+                $stamp,
+                $name;
+        }
+    }
+
+    if ($mode eq 'vv') {
+        printf "---------- ----------- ------- ------- ------ ---------- ------------ -------------\n";
+    } else {
+        printf "---------- ----------- ------- ------ ------------ --------------------\n";
+    }
+
+    my $ratio = $totals->{original_size}
+        ? 100 * $totals->{encoded_size} / $totals->{original_size} : 0;
+    my $stamp = Time::Moment->from_epoch((stat($fname))[9])->strftime("%b %e  %Y");
+
+    if ($mode eq 'vv') {
+        printf " Total        %2d files %7d %7d %5.1f%% %s\n",
+            $totals->{count},
+            $totals->{encoded_size},
+            $totals->{original_size},
+            $ratio,
+            $stamp;
+    } else {
+        printf " Total        %2d files %7d %5.1f%% %s\n",
+            $totals->{count},
+            $totals->{original_size},
+            $ratio,
+            $stamp;
+    }
 }
 
 sub open_archive {
