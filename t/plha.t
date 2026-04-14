@@ -89,4 +89,15 @@ subtest 'directory entries' => sub {
     unlike $output, qr/Can't load/, 'No module loading errors';
 };
 
+subtest 'corrupt DOS timestamps' => sub {
+    use Archive::Lha::Header::Utils;
+    # month=0, day=0 would cause Time::Piece to die
+    my $epoch = Archive::Lha::Header::Utils::_dostime2utime(0);
+    is $epoch, 0, 'All-zero DOS time returns epoch 0';
+    # Valid timestamp should still work
+    # 2025-01-20 17:56:00 in DOS format
+    $epoch = Archive::Lha::Header::Utils::_dostime2utime(0x5A34B800);
+    ok $epoch > 0, 'Valid DOS time returns positive epoch';
+};
+
 done_testing;
