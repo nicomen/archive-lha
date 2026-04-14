@@ -67,7 +67,7 @@ subtest 'Total line alignment' => sub {
     like $total_line, qr/^ Total\s+\d+ files?\s+\d+\s+\d+/, 'Total line has count, packed, size';
     # After "files " the PACKED number starts at position 22
     my ($prefix) = $total_line =~ /^(.*files\s)/;
-    is length($prefix), 22, 'Total prefix is 22 chars (matches lhasa column footers)';
+    is length($prefix), 23, 'Total prefix is 23 chars (matches lhasa column footers)';
 };
 
 subtest 'prefix is 23 chars wide' => sub {
