@@ -214,9 +214,9 @@ sub usage {
 sub _ls_stamp {
     my ($epoch) = @_;
     my $now = time;
-    my $six_months = 180 * 86400;
+    my $one_year = 365 * 86400;
     my $tm = Time::Moment->from_epoch($epoch);
-    if (abs($now - $epoch) < $six_months) {
+    if (abs($now - $epoch) < $one_year) {
         return $tm->strftime("%b %e %H:%M");
     }
     return $tm->strftime("%b %e  %Y");
