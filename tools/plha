@@ -286,9 +286,9 @@ sub _list_lhasa {
         ? 100 * $totals->{encoded_size} / $totals->{original_size} : 0;
     my $stamp = _ls_stamp((stat($fname))[9]);
 
-    # PERMSSN column (10 chars) + UID/GID column (11 chars) = 21 chars for prefix
-    my $file_str = $totals->{count} == 1 ? ' file ' : ' files';
-    my $prefix = sprintf(" Total    %5d%s", $totals->{count}, $file_str);
+    # PERMSSN (10) + sep (1) + UID/GID (11) + sep (1) = 23 chars for prefix
+    my $file_str = $totals->{count} == 1 ? 'file ' : 'files';
+    my $prefix = sprintf("%-23s", sprintf(" Total  %5d %s", $totals->{count}, $file_str));
 
     if ($mode eq 'lv') {
         printf "%s%7d %7d %5.1f%%            %s\n",
@@ -323,8 +323,7 @@ sub _lhasa_prefix {
         }
         my $uid = $header->{unix_uid} // 0;
         my $gid = $header->{unix_gid} // 0;
-        my $id_str = "$uid/$gid";
-        return $str . '  ' . sprintf("%-11s", $id_str);
+        return sprintf "%-23s", $str . sprintf("  %d/%d", $uid, $gid);
     }
     return sprintf "%-23s", '[' . ($header->{os}[1] // 'generic') . ']';
 }
