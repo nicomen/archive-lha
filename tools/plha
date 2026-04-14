@@ -254,7 +254,7 @@ sub _list_lhasa {
         my $prefix = _lhasa_prefix($header);
         my $ratio_str = _is_directory($header) ? '******'
             : sprintf("%5.1f%%", $header->{original_size}
-                ? 100 * $header->{encoded_size} / $header->{original_size} : 0);
+                ? 100 * $header->{encoded_size} / $header->{original_size} : 100);
 
         if ($mode eq 'lv') {
             printf "%s%7d %7d %s -%s- %04x %s %s\n",
@@ -283,7 +283,7 @@ sub _list_lhasa {
     }
 
     my $ratio = $totals->{original_size}
-        ? 100 * $totals->{encoded_size} / $totals->{original_size} : 0;
+        ? 100 * $totals->{encoded_size} / $totals->{original_size} : 100;
     my $stamp = _ls_stamp((stat($fname))[9]);
 
     # PERMSSN (10) + sep (1) + UID/GID (11) + sep (1) = 23 chars for prefix
