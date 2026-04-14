@@ -250,7 +250,8 @@ sub _list_lhasa {
 
         my $stamp = _ls_stamp($header->{timestamp});
         my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
-        $name .= '/' if _is_directory($header) && $name !~ m{/$};
+        $name = '' if $name eq '.';  # empty root directory
+        $name .= '/' if _is_directory($header) && $name ne '' && $name !~ m{/$};
         my $prefix = _lhasa_prefix($header);
         my $ratio_str = _is_directory($header) ? '******'
             : sprintf("%5.1f%%", $header->{original_size}
@@ -324,7 +325,8 @@ sub _lhasa_prefix {
         }
         my $uid = $header->{unix_uid} // 0;
         my $gid = $header->{unix_gid} // 0;
-        return sprintf "%-23s", $str . sprintf("  %d/%d", $uid, $gid);
+        # PERMSSN(10) + sep(1) + UID/GID(%5d/%-5d = 11) + sep(1) = 23
+        return sprintf "%s %5d/%-5d ", $str, $uid, $gid;
     }
     return sprintf "%-23s", '[' . ($header->{os}[1] // 'generic') . ']';
 }
