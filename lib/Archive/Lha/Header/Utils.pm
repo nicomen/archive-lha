@@ -3,7 +3,7 @@ package Archive::Lha::Header::Utils;
 use strict;
 use warnings;
 use Carp;
-use Time::Piece;
+use POSIX ();
 use Exporter::Lite;
 
 our @EXPORT = qw(
@@ -14,16 +14,17 @@ sub _int   { unpack 'V', ( pack 'aaaa', @_ ) }
 sub _short { unpack 'v', ( pack 'aa', @_ ) }
 
 sub _dostime2utime {
+  return 0 unless @_ && $_[0];  # All-zero timestamp = epoch 0
+
   my ($year, $mon, $day, $hour, $min, $sec) =
     map { eval('0b'.$_) }
     unpack 'a7a4a5a5a6a5', unpack 'B32', pack 'N', @_;
   $year += 1980;
   $sec  *= 2;
 
-  my $timestr = sprintf( '%04d-%02d-%02d %02d:%02d:%02d',
-                         $year, $mon, $day, $hour, $min, $sec );
-
-  eval { Time::Piece->strptime($timestr => '%Y-%m-%d %H:%M:%S')->epoch } // 0;
+  # Use POSIX::mktime which normalizes out-of-range values (like hour=31)
+  # matching C mktime behavior used by lhasa
+  POSIX::mktime($sec, $min, $hour, $day, $mon - 1, $year - 1900) // 0;
 }
 
 sub _os_id {
