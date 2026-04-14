@@ -287,9 +287,9 @@ sub _list_lhasa {
     my $stamp = _ls_stamp((stat($fname))[9]);
 
     # PERMSSN (10) + sep (1) + UID/GID (11) + sep (1) = 23 chars for prefix
-    # PERMSSN footer (10) + sep (1) + UID/GID footer (10) + sep (1) = 22 chars
+    # " Total    " (PERMSSN 10) + " " (sep) + "%5d files" (UID/GID 11) + " " (sep) = 23
     my $file_str = $totals->{count} == 1 ? 'file ' : 'files';
-    my $prefix = sprintf(" Total    %5d %s ", $totals->{count}, $file_str);
+    my $prefix = " Total    " . sprintf(" %5d %s ", $totals->{count}, $file_str);
 
     if ($mode eq 'lv') {
         printf "%s%7d %7d %5.1f%%            %s\n",
