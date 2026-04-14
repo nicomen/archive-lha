@@ -59,6 +59,17 @@ subtest 'plha l format matches lhasa' => sub {
     }
 };
 
+subtest 'Total line alignment' => sub {
+    my $output = `$^X -Iblib/lib -Iblib/arch bin/plha lv $lha 2>&1`;
+    my ($total_line) = grep { /Total/ } split /\n/, $output;
+    # Total prefix is 22 chars (PERMSSN footer 10 + sep 1 + UID/GID footer 10 + sep 1)
+    # then %7d PACKED starts at position 22
+    like $total_line, qr/^ Total\s+\d+ files?\s+\d+\s+\d+/, 'Total line has count, packed, size';
+    # After "files " the PACKED number starts at position 22
+    my ($prefix) = $total_line =~ /^(.*files\s)/;
+    is length($prefix), 22, 'Total prefix is 22 chars (matches lhasa column footers)';
+};
+
 subtest 'prefix is 23 chars wide' => sub {
     my $output = `$^X -Iblib/lib -Iblib/arch bin/plha lv $lha 2>&1`;
     my @file_lines = grep { /^\[/ } split /\n/, $output;
