@@ -286,18 +286,20 @@ sub _list_lhasa {
         ? 100 * $totals->{encoded_size} / $totals->{original_size} : 0;
     my $stamp = _ls_stamp((stat($fname))[9]);
 
+    # PERMSSN column (10 chars) + UID/GID column (11 chars) = 21 chars for prefix
+    my $file_str = $totals->{count} == 1 ? ' file ' : ' files';
+    my $prefix = sprintf(" Total    %5d%s", $totals->{count}, $file_str);
+
     if ($mode eq 'lv') {
-        my $file_str = $totals->{count} == 1 ? 'file ' : 'files';
-        printf " Total  %5d %s %7d %7d %5.1f%%            %s\n",
-            $totals->{count}, $file_str,
+        printf "%s%7d %7d %5.1f%%            %s\n",
+            $prefix,
             $totals->{encoded_size},
             $totals->{original_size},
             $ratio,
             $stamp;
     } else {
-        my $file_str = $totals->{count} == 1 ? 'file ' : 'files';
-        printf " Total  %5d %s %7d %5.1f%% %s\n",
-            $totals->{count}, $file_str,
+        printf "%s%7d %5.1f%% %s\n",
+            $prefix,
             $totals->{original_size},
             $ratio,
             $stamp;
