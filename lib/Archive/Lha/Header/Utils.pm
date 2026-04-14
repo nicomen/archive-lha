@@ -23,7 +23,7 @@ sub _dostime2utime {
   my $timestr = sprintf( '%04d-%02d-%02d %02d:%02d:%02d',
                          $year, $mon, $day, $hour, $min, $sec );
 
-  Time::Piece->strptime($timestr => '%Y-%m-%d %H:%M:%S')->epoch;
+  eval { Time::Piece->strptime($timestr => '%Y-%m-%d %H:%M:%S')->epoch } // 0;
 }
 
 sub _os_id {
