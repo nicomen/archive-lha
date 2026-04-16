@@ -252,6 +252,7 @@ sub _list_lhasa {
         my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
         $name = '' if $name eq '.';  # empty root directory
         $name .= '/' if _is_directory($header) && $name ne '' && $name !~ m{/$};
+        $name = _fix_msdos_allcaps($name);
         my $prefix = _lhasa_prefix($header);
         my $ratio_str = _is_directory($header) ? '******'
             : sprintf("%5.1f%%", $header->{original_size}
@@ -309,6 +310,14 @@ sub _list_lhasa {
 }
 
 sub _is_directory { $_[0]->{method} eq 'lhd' }
+
+# MS-DOS archives store filenames in all-caps. Lhasa detects per-file
+# all-caps paths and converts to lowercase. Match that behavior.
+sub _fix_msdos_allcaps {
+    my ($name) = @_;
+    return $name if $name =~ /[a-z]/;  # has lowercase = not all-caps
+    return lc $name;
+}
 
 # Format permission/owner prefix like lhasa does
 sub _lhasa_prefix {
