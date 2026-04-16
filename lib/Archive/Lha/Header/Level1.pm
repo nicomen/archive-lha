@@ -15,7 +15,7 @@ sub new {
   my $start = $stream->tell;
   my $size = ord( $stream->read(1) ) + 2;
 
-  croak "Header is broken: size is too small: $size" if $size < 27;
+  croak "Header is broken: size is too small: $size" if $size < 27;  # lhasa minimum is 25+2
 
   $stream->seek( $start );
   my @bits = split '', $stream->read( $size );
