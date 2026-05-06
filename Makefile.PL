@@ -1,31 +1,41 @@
 use strict;
 use warnings;
-use 5.008001;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-  NAME          => 'Archive::Lha',
-  AUTHOR        => 'Kenichi Ishigaki <ishigaki@cpan.org>',
-  VERSION_FROM  => 'lib/Archive/Lha.pm',
-  ABSTRACT_FROM => 'lib/Archive/Lha.pm',
-  PREREQ_PM => {
-    'Carp'                => 0,
-    'Data::Dump'          => 0,
-    'Exporter::Lite'      => 0,
-    'Fcntl'               => 0,
-    'File::Basename'      => 0,
-    'File::Path'          => 0,
-    'File::Slurp'         => 0,
-    'File::Spec'          => 0,
-    'List::Util'          => 0,
-    'Log::Dispatch'       => 0,
-    'Test::UseAllModules' => '0.09',
-    'Test::More'          => '0.47',
-    'Time::Piece'         => 0,
-  },
-  EXE_FILES => ['tools/plha'],
-  ($ExtUtils::MakeMaker::VERSION >= 6.31
-    ? ( LICENSE => 'perl' )
-    : ()
-  ),
+    NAME          => 'Archive::Lha',
+    VERSION_FROM  => 'lib/Archive/Lha.pm',
+    ABSTRACT_FROM => 'lib/Archive/Lha.pm',
+    AUTHOR        => [
+        'Kenichi Ishigaki <ishigaki@cpan.org>',
+        'Nicolas Mendoza <mendoza@pvv.ntnu.no>',
+    ],
+    LICENSE       => 'perl',
+    XSMULTI       => 1,
+    PREREQ_PM     => {
+        'Exporter::Lite' => 0,
+        'POSIX'          => 0,
+    },
+    TEST_REQUIRES => {
+        'Test::More'         => '0.47',
+        'Test::UseAllModules' => '0.09',
+        'Time::Moment'       => 0,
+    },
+    META_MERGE => {
+        'meta-spec' => { version => 2 },
+        resources   => {
+            repository => {
+                type => 'git',
+                url  => 'https://github.com/nicomen/Archive-Lha.git',
+                web  => 'https://github.com/nicomen/Archive-Lha',
+            },
+            bugtracker => {
+                web => 'https://github.com/nicomen/Archive-Lha/issues',
+            },
+        },
+    },
+    MIN_PERL_VERSION => '5.010',
+    EXE_FILES        => ['bin/plha'],
+    dist             => { COMPRESS => 'gzip -9f', SUFFIX => 'gz' },
+    clean            => { FILES => 'Archive-Lha-*' },
 );
