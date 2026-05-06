@@ -1,0 +1,22 @@
+# Standard CPAN exclusions
+\bRCS\b
+\bCVS\b
+,v$
+\B\.svn\b
+\B\.git\b
+^\.git/
+\.gitignore$
+^MANIFEST\.SKIP$
+^Makefile$
+^Makefile\.old$
+^blib/
+^pm_to_blib
+^MakeMaker-\d
+\.tar\.gz$
+^Archive-Lha-
+\.bs$
+\.o$
+^#
+~$
+\.swp$
+MYMETA\.(json|yml)$

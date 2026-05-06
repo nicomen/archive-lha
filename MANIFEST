@@ -1,7 +1,9 @@
+bin/plha
 Changes
-Lha.h
-Lha.xs
+lib/Archive/Lha.c
+lib/Archive/Lha.h
 lib/Archive/Lha.pm
+lib/Archive/Lha.xs
 lib/Archive/Lha/Constants.pm
 lib/Archive/Lha/CRC.pm
 lib/Archive/Lha/Debug.pm
@@ -22,17 +24,12 @@ lib/Archive/Lha/Stream/Base.pm
 lib/Archive/Lha/Stream/File.pm
 lib/Archive/Lha/Stream/Hex.pm
 lib/Archive/Lha/Stream/String.pm
+lib/Archive/ppport.h
 Makefile.PL
 MANIFEST			This list of files
-ppport.h
-README
-t/00_load.t
-t/20_decode.t
-t/99_pod.t
-t/99_podcoverage.t
-t/archive/lh0.lzh
-t/archive/lh5.lzh
-t/archive/lh5_lvl1.lzh
-t/archive/lh7.lzh
-tools/plha
-META.yml                                 Module meta-data (added by MakeMaker)
+MANIFEST.SKIP
+t/00-load.t
+t/data/_examples/Africa.lha
+t/data/_examples/BeeBase-1.1.lha
+t/data/_examples/MemLeakZ.lha
+t/plha.t

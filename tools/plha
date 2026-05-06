@@ -400,10 +400,12 @@ plha is a simple command line tool to extract .lzh archives. It shows file list 
 
 =head1 AUTHOR
 
-Tokuhiro Matsuno <tokuhiro __at__ mobilefactory.jp>
+Nicolas Mendoza E<lt>mendoza@pvv.ntnu.noE<gt>
 
-LICENSE AND COPYRIGHT
+Based on a skeleton originally by Tokuhiro Matsuno.
 
-Copyright (c) 2007, Tokuhiro Matsuno <tokuhiro __at__ mobilefactory.jp>.
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (c) 2025-2026 Nicolas Mendoza E<lt>mendoza@pvv.ntnu.noE<gt>.
 
 This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself. See perlartistic.

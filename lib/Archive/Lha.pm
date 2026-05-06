@@ -3,7 +3,7 @@ package Archive::Lha;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.10';
 
 require XSLoader;
 XSLoader::load('Archive::Lha', $VERSION);
@@ -70,11 +70,14 @@ Most of these are written in Japanese.
 
 =head1 AUTHOR
 
-Kenichi Ishigaki, E<lt>ishigaki@cpan.orgE<gt>.
+Kenichi Ishigaki, E<lt>ishigaki@cpan.orgE<gt> (original author).
+
+Nicolas Mendoza E<lt>mendoza@pvv.ntnu.noE<gt> (Amiga-specific improvements, bug fixes).
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2007 by Kenichi Ishigaki, unless otherwise noted. See above.
+Copyright (C) 2025-2026 by Nicolas Mendoza, for additional modifications.
 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

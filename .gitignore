@@ -1,0 +1,11 @@
+Makefile
+Makefile.old
+MYMETA.json
+MYMETA.yml
+blib/
+pm_to_blib
+*.bs
+*.o
+*.so
+lib/Archive/Lha.c
+Archive-Lha-*.tar.gz
