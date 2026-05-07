@@ -23,6 +23,23 @@ sub import {
   }
 }
 
+# Map OS identifier to the most likely filename encoding used by that platform.
+my %_os_charset = (
+  'a' => 'iso-8859-15',  # Amiga
+  'M' => 'cp1252',       # MS-DOS / Windows
+  'w' => 'cp1252',       # WinNT / Win95
+  'U' => 'UTF-8',        # Unix
+  'H' => 'cp932',        # Human68K (Sharp X68000)
+  'J' => 'cp932',        # Java VM (often used with Japanese archives)
+  'm' => 'UTF-8',        # Macintosh (modern)
+);
+
+sub charset_for_os {
+  my ($self) = @_;
+  my $os_id = $self->{os} ? $self->{os}[0] : undef;
+  return $os_id && $os_id ne '?' ? ( $_os_charset{$os_id} // 'guess' ) : 'guess';
+}
+
 sub pathname {
   my ($self, $from, $to) = @_;
   my $path;
@@ -47,21 +64,23 @@ sub pathname {
     my ($vol, $dir, $file) = File::Spec->splitpath( $path );
     $path = File::Spec->catfile( '.', $dir, $file );
   }
-  if ( $from && $to ) {
-    require Encode;
-    if ( lc $from eq 'guess' ) {
-      require Encode::Guess;
-      my $enc = Encode::Guess::guess_encoding(
-        $path => qw( latin1 latin2 cp932 euc-jp )
-      );
-      if ( ref $enc ) {
-        Encode::from_to( $path, $enc->name, $to );
-      }
-    }
-    else {
-      Encode::from_to( $path, $from, $to );
-    }
+
+  # default from-encoding: auto-detect from OS field
+  $from //= $self->charset_for_os;
+  $to   //= 'UTF-8';
+
+  require Encode;
+  if ( lc $from eq 'guess' ) {
+    require Encode::Guess;
+    my $enc = Encode::Guess::guess_encoding(
+      $path => qw( latin1 latin2 cp932 euc-jp )
+    );
+    Encode::from_to( $path, ref($enc) ? $enc->name : 'latin1', $to );
   }
+  elsif ( lc $from ne lc $to ) {
+    Encode::from_to( $path, $from, $to );
+  }
+
   return File::Spec->canonpath( $path );
 }
 
