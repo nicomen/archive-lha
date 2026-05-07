@@ -163,6 +163,15 @@ If you are not sure, you can let it guess:
   # original encoding of the path would be guessed
   $header->pathname('guess' => 'shiftjis');
 
+=head2 charset_for_os
+
+Returns the most likely filename encoding for this archive entry based on
+the OS identifier byte in the header: C<iso-8859-15> for Amiga (C<a>),
+C<cp1252> for MS-DOS/Windows (C<M>/C<w>), C<UTF-8> for Unix (C<U>) and
+modern Mac (C<m>), C<cp932> for Human68K/Java (C<H>/C<J>). Returns
+C<'guess'> when the OS field is absent or unrecognised, which causes
+C<pathname()> to invoke L<Encode::Guess>.
+
 =head2 dirname
 
 returns directory part of the pathname. This is mainly used while creating parent directory for the file.

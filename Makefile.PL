@@ -20,11 +20,14 @@ WriteMakefile(
         'File::Path'      => 0,
         'Getopt::Long'    => 0,
         'Time::Moment'    => 0,
+        'Log::Dispatch'   => 0,
+        'Data::Dump'      => 0,
     },
     TEST_REQUIRES => {
         'Test::More'          => '0.47',
         'Test::UseAllModules' => '0.09',
         'Time::Moment'        => 0,
+        'File::Slurp'         => 0,
     },
     META_MERGE => {
         'meta-spec' => { version => 2 },
