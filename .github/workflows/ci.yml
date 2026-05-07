@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        perl: [ '5.36', '5.38', '5.40' ]
+
+    name: Perl ${{ matrix.perl }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+
+      - name: Install dependencies
+        run: |
+          cpanm --notest \
+            Exporter::Lite \
+            Encode \
+            File::Basename \
+            File::Path \
+            Getopt::Long \
+            Time::Moment \
+            Log::Dispatch \
+            Data::Dump \
+            File::Slurp \
+            Test::More \
+            Test::Pod \
+            Test::Pod::Coverage
+
+      - name: Build
+        run: |
+          perl Makefile.PL
+          make
+
+      - name: Test
+        run: make test TEST_POD=1
