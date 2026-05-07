@@ -197,17 +197,161 @@ Operation successful
     },
 };
 
+my $PROGNAME = basename($0);
+
 &main;exit;
 
 sub main {
+    if ($PROGNAME eq 'plhasa') {
+        _main_lhasa();
+    } else {
+        _main_plha();
+    }
+}
+
+sub _main_plha {
     my $cmd = shift @ARGV or usage();
     my $file = shift @ARGV or usage();
     check_magic($file);
     $controller->{$cmd}->($file, @ARGV);
 }
 
+# lhasa-compatible argument parsing:
+# [-]{lvtxep[q{num}][finv]}[w=<dir>] archive_file [file...]
+sub _main_lhasa {
+    my $arg = shift @ARGV or usage_lhasa();
+    $arg =~ s/^-//;  # strip optional leading dash
+
+    # extract command letter (first char)
+    my ($cmd_char) = $arg =~ /^([lvtxep])/i or usage_lhasa();
+    my $flags = substr($arg, 1);  # everything after command char
+
+    # parse options from flags string
+    my %opts = (quiet => 0, verbose => 0, force => 0, ignore_path => 0, dry_run => 0, extract_dir => undef);
+    while (length $flags) {
+        if ($flags =~ s/^q(\d*)//) {
+            $opts{quiet} = length($1) ? int($1) : 1;
+        } elsif ($flags =~ s/^w=([^\s]+)//) {
+            $opts{extract_dir} = $1;
+        } elsif ($flags =~ s/^f//) {
+            $opts{force} = 1;
+        } elsif ($flags =~ s/^i//) {
+            $opts{ignore_path} = 1;
+        } elsif ($flags =~ s/^n//) {
+            $opts{dry_run} = 1;
+        } elsif ($flags =~ s/^v//) {
+            $opts{verbose} = 1;
+        } else {
+            $flags = substr($flags, 1);  # skip unknown flag
+        }
+    }
+
+    # also allow w=<dir> as a separate argument
+    if (@ARGV && $ARGV[0] =~ /^w=(.+)/) {
+        $opts{extract_dir} = $1;
+        shift @ARGV;
+    }
+
+    my $file = shift @ARGV or usage_lhasa();
+    check_magic($file);
+
+    my $cmd = lc $cmd_char;
+    # command aliases
+    $cmd = 'x' if $cmd eq 'e';
+    $cmd = 'l' if $cmd eq 'v';  # lhasa 'v' is verbose list = our 'lv'... but 'l' is terse
+    # lhasa: l = terse list, v = verbose list (with method/crc)
+    $cmd = 'lv' if $cmd_char eq 'v';
+    $cmd = 'l'  if $cmd_char eq 'l';
+
+    if ($cmd eq 'p') {
+        _print_to_stdout($file, \%opts, @ARGV);
+    } elsif ($cmd eq 'x') {
+        _extract_lhasa($file, \%opts, @ARGV);
+    } elsif ($cmd eq 'l' || $cmd eq 'lv') {
+        $controller->{$cmd}->($file);
+    } elsif ($cmd eq 't') {
+        $controller->{t}->($file);
+    } else {
+        usage_lhasa();
+    }
+}
+
+sub _print_to_stdout {
+    my ($fname, $opts, @targets) = @_;
+    my %target = map { $_ => 1 } @targets;
+    my $stream = open_archive($fname);
+    while ( defined( my $level = $stream->search_header ) ) {
+        my $header = Archive::Lha::Header->new( level => $level, stream => $stream );
+        if (%target && !$target{$header->pathname}) {
+            $stream->seek( $header->{next_header} );
+            next;
+        }
+        next if _is_directory($header);
+        $stream->seek( $header->data_top );
+        my ($decoded) = _decode_entry($header, $stream);
+        $stream->seek( $header->{next_header} );
+        print $decoded;
+    }
+}
+
+sub _extract_lhasa {
+    my ($fname, $opts, @targets) = @_;
+    my %target = map { $_ => 1 } @targets;
+    my $stream = open_archive($fname);
+    while ( defined( my $level = $stream->search_header ) ) {
+        my $header = Archive::Lha::Header->new( level => $level, stream => $stream );
+        my $pathname = $header->pathname;
+        $pathname =~ s{.*/}{} if $opts->{ignore_path};
+        if (%target && !$target{$pathname}) {
+            $stream->seek( $header->{next_header} );
+            next;
+        }
+        $pathname = File::Spec->catfile($opts->{extract_dir}, $pathname)
+            if $opts->{extract_dir};
+
+        if (_is_directory($header)) {
+            mkpath $pathname unless -d $pathname || $opts->{dry_run};
+            $stream->seek( $header->{next_header} );
+            next;
+        }
+
+        $stream->seek( $header->data_top );
+        my ($decoded, $crc) = _decode_entry($header, $stream);
+        $stream->seek( $header->{next_header} );
+        die "crc mismatch for " . $header->pathname if $crc != $header->crc16;
+
+        unless ($opts->{dry_run}) {
+            if (-e $pathname && !$opts->{force}) {
+                print STDERR "$pathname already exists, skipping (use -f to force)\n";
+                next;
+            }
+            write_all($pathname, $decoded);
+        }
+        printf "  %s\n", $pathname if $opts->{verbose};
+    }
+}
+
+sub usage_lhasa {
+    die "plhasa -- Perl LHA tool (lhasa-compatible)\n" .
+        "usage: plhasa [-]{lvtxep[q{num}][finv]}[w=<dir>] archive_file [file...]\n" .
+        "commands:                          options:\n" .
+        " l   List (terse)                   f  Force overwrite (no prompt)\n" .
+        " v   Verbose list                   i  Ignore directory path\n" .
+        " t   Test file CRC in archive       n  Perform dry run\n" .
+        " x,e Extract from archive           q{num}  Quiet mode\n" .
+        " p   Print to stdout from archive   v  Verbose\n" .
+        "                                    w=<dir> Specify extract directory\n";
+}
+
 sub usage {
-    die "Usage: $0 (l|lv|v|vv|x|t|d) archive (files)\n l  - list contents (lhasa l format)\n lv - list contents (lhasa v format)\n v  - list archive verbose (LhA v format)\n vv - list archive full (LhA vv format)\n x  - extract archive\n t  - test file\n d  - dump each header\n";
+    die "Usage: $0 (l|lv|v|vv|x|t|d) archive (files)\n" .
+        " l  - list contents (lhasa l format)\n" .
+        " lv - list contents (lhasa v format)\n" .
+        " v  - list archive verbose (LhA v format)\n" .
+        " vv - list archive full (LhA vv format)\n" .
+        " x  - extract archive\n" .
+        " t  - test file\n" .
+        " d  - dump each header\n";
 }
 
 # ls-style date: show time if within ~6 months, year otherwise

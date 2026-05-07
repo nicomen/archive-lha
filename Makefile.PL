@@ -34,7 +34,15 @@ WriteMakefile(
         },
     },
     MIN_PERL_VERSION => '5.010',
-    EXE_FILES        => ['bin/plha'],
+    EXE_FILES        => ['tools/plha'],
     dist             => { COMPRESS => 'gzip -9f', SUFFIX => 'gz' },
     clean            => { FILES => 'Archive-Lha-*' },
 );
+
+package MY;
+sub postamble {
+    return <<'MAKE';
+install ::
+	$(PERL) -e 'use File::Spec; my $$dir = "$(INSTALLSCRIPT)"; my $$src = File::Spec->catfile($$dir, "plha"); my $$dst = File::Spec->catfile($$dir, "plhasa"); unlink $$dst; symlink $$src, $$dst and print "Symlinking plhasa -> plha\n"'
+MAKE
+}
