@@ -13,13 +13,18 @@ WriteMakefile(
     LICENSE       => 'perl',
     XSMULTI       => 1,
     PREREQ_PM     => {
-        'Exporter::Lite' => 0,
-        'POSIX'          => 0,
+        'Exporter::Lite'  => 0,
+        'POSIX'           => 0,
+        'Encode'          => 0,
+        'File::Basename'  => 0,
+        'File::Path'      => 0,
+        'Getopt::Long'    => 0,
+        'Time::Moment'    => 0,
     },
     TEST_REQUIRES => {
-        'Test::More'         => '0.47',
+        'Test::More'          => '0.47',
         'Test::UseAllModules' => '0.09',
-        'Time::Moment'       => 0,
+        'Time::Moment'        => 0,
     },
     META_MERGE => {
         'meta-spec' => { version => 2 },

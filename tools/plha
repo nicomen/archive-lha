@@ -8,6 +8,7 @@ use FindBin;
 use File::Spec;
 use File::Basename;
 use File::Path;
+use Getopt::Long qw( GetOptionsFromArray );
 use lib File::Spec->catfile($FindBin::Bin, '..', 'lib');
 
 use Archive::Lha::Decode;
@@ -15,6 +16,17 @@ use Archive::Lha::Header;
 use Archive::Lha::Stream::File;
 use Carp;
 use Time::Moment;
+
+# Charset options: -fc (from charset) and -tc (to charset)
+my $opt_from_charset;
+my $opt_to_charset;
+
+# Return display name for a header, respecting -fc/-tc options.
+# Without options, pathname() auto-detects from the OS field.
+sub _display_name {
+  my ($header) = @_;
+  return $header->pathname( $opt_from_charset, $opt_to_charset // 'UTF-8' );
+}
 
 my $controller = +{
     d => sub {
@@ -32,11 +44,20 @@ my $controller = +{
     },
     l => sub {
         my $fname = shift or usage();
-        _list_lhasa($fname, 'l');
-    },
-    lv => sub {
-        my $fname = shift or usage();
-        _list_lhasa($fname, 'lv');
+        my $stream = open_archive($fname);
+        while ( defined( my $level = $stream->search_header ) ) {
+            my $header = Archive::Lha::Header->new(
+                level  => $level,
+                stream => $stream
+            );
+            $stream->seek( $header->{next_header} );
+            my $name = _display_name($header);
+            $name = '' if $name eq '.';
+            $name .= '/' if _is_directory($header) && $name ne '' && $name !~ m{/$};
+            # + prefix if the name contains a path component
+            my $prefix = ($name =~ m{/} && !_is_directory($header)) ? '+' : ' ';
+            printf "%s%s\n", $prefix, $name;
+        }
     },
     v => sub {
         my $contents = '';
@@ -61,7 +82,7 @@ my $controller = +{
               (($header->{encoded_size} && $header->{original_size}) ? 100 * ($header->{original_size} - $header->{encoded_size}) / $header->{original_size} : 0),
               Time::Moment->from_epoch($header->{timestamp})->strftime("%d-%b-%y"),
               Time::Moment->from_epoch($header->{timestamp})->strftime("%T"),
-              Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+              _display_name($header);
             printf ": %s\n", $header->{comment} if $header->{comment};
         }
         print "-------- ------- ----- --------- --------\n";
@@ -90,7 +111,7 @@ my $controller = +{
             $totals->{encoded_size}  += $header->{encoded_size};
             $totals->{count}         += 1;
 
-            my $name = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+            my $name = _display_name($header);
             my $os_char = uc($header->{os}[0] // '?');
             my $hdr_level = ref($header) =~ /Level(\d)/ ? $1 : '?';
 
@@ -133,7 +154,7 @@ my $controller = +{
             $totals->{original_size} += $header->{original_size};
             $totals->{encoded_size}  += $header->{encoded_size};
             $totals->{count}         += 1;
-            printf "    Testing: (%8d/%8d)  %s\n", $header->{original_size}, $header->{original_size}, Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+            printf "    Testing: (%8d/%8d)  %s\n", $header->{original_size}, $header->{original_size}, _display_name($header);
         }
         my $error = undef;
         if ($totals->{count}) {
@@ -149,20 +170,6 @@ my $controller = +{
         } else {
             printf "\nOperation succesful\n\n";
         }
-=pod
-     WARNING: Skipping corrupt/extraneous data
-No files tested.
-
-Operation not entirely successful
-
----
-    Testing: (   12345/   12345)  file-name
-    …
-129 files tested, all files OK
-
-Operation successful
-
-=cut
     },
     x => sub {
         my $fname = shift or usage();
@@ -210,9 +217,16 @@ sub main {
 }
 
 sub _main_plha {
+    GetOptionsFromArray(\@ARGV,
+        'fc=s' => \$opt_from_charset,
+        'tc=s' => \$opt_to_charset,
+    );
     my $cmd = shift @ARGV or usage();
     my $file = shift @ARGV or usage();
     check_magic($file);
+    if ( !exists $controller->{$cmd} ) {
+        usage("Unknown command: $cmd");
+    }
     $controller->{$cmd}->($file, @ARGV);
 }
 
@@ -256,19 +270,16 @@ sub _main_lhasa {
     check_magic($file);
 
     my $cmd = lc $cmd_char;
-    # command aliases
     $cmd = 'x' if $cmd eq 'e';
-    $cmd = 'l' if $cmd eq 'v';  # lhasa 'v' is verbose list = our 'lv'... but 'l' is terse
-    # lhasa: l = terse list, v = verbose list (with method/crc)
-    $cmd = 'lv' if $cmd_char eq 'v';
-    $cmd = 'l'  if $cmd_char eq 'l';
 
     if ($cmd eq 'p') {
         _print_to_stdout($file, \%opts, @ARGV);
     } elsif ($cmd eq 'x') {
         _extract_lhasa($file, \%opts, @ARGV);
-    } elsif ($cmd eq 'l' || $cmd eq 'lv') {
-        $controller->{$cmd}->($file);
+    } elsif ($cmd eq 'l') {
+        _list_lhasa($file, 'l');
+    } elsif ($cmd eq 'v') {
+        _list_lhasa($file, 'lv');
     } elsif ($cmd eq 't') {
         $controller->{t}->($file);
     } else {
@@ -344,14 +355,20 @@ sub usage_lhasa {
 }
 
 sub usage {
-    die "Usage: $0 (l|lv|v|vv|x|t|d) archive (files)\n" .
-        " l  - list contents (lhasa l format)\n" .
-        " lv - list contents (lhasa v format)\n" .
+    my ($msg) = @_;
+    my $text = "Usage: $0 [-fc charset] [-tc charset] (l|v|vv|x|t|d) archive (files)\n" .
+        " l  - list contents (LhA terse format, filename only)\n" .
         " v  - list archive verbose (LhA v format)\n" .
         " vv - list archive full (LhA vv format)\n" .
         " x  - extract archive\n" .
         " t  - test file\n" .
-        " d  - dump each header\n";
+        " d  - dump each header\n" .
+        " -fc <charset>  from-charset for filenames (default: auto-detect)\n" .
+        " -tc <charset>  to-charset for filenames (default: UTF-8)\n";
+    if ($msg) {
+        die "$msg\n$text";
+    }
+    die $text;
 }
 
 # ls-style date: show time if within ~6 months, year otherwise
@@ -393,7 +410,7 @@ sub _list_lhasa {
         $totals->{count}         += 1;
 
         my $stamp = _ls_stamp($header->{timestamp});
-        my $name  = Encode::encode_utf8(Encode::decode('iso-8859-15', $header->pathname));
+        my $name  = _display_name($header);
         $name = '' if $name eq '.';  # empty root directory
         $name .= '/' if _is_directory($header) && $name ne '' && $name !~ m{/$};
         $name = _fix_msdos_allcaps($name);
@@ -515,41 +532,131 @@ sub write_all {
 
 sub check_magic {
     my $fname = shift;
-    open my $fh, '<:raw', $fname;
+    open my $fh, '<:raw', $fname or die "Cannot open $fname: $!";
     binmode $fh;
     my $magic;
-    my $chars = read($fh,$magic,5);
+    my $chars = read($fh, $magic, 5);
     my ($signature) = unpack("x2a3", $magic);
     die 'Does not look like an LHa file' unless $signature eq "-lh";
+
+    # Check for truncation: last byte of a well-formed LHA archive is 0x00
+    seek $fh, -1, 2;
+    my $last_byte;
+    read $fh, $last_byte, 1;
+    if ( ord($last_byte) != 0x00 ) {
+        warn "WARNING: Archive may be truncated or corrupt (last byte is not 0x00)\n";
+    }
+    close $fh;
 }
 
 __END__
 
+=encoding UTF-8
+
 =head1 NAME
 
-plha - command line tool to extract .lzh archive
+plha - Amiga LhA-compatible command line tool for .lzh/.lha archives
 
 =head1 SYNOPSIS
 
-  # From the command line
-  > plha v archive.lzh
-  > plha x archive.lzh
+  plha [-fc charset] [-tc charset] <command> archive.lzh [files...]
 
-  # if you want to extract a specific file from the archive
-  > plha x archive.lzh pathname_in_the_archive
+  plha l archive.lzh          # terse list (LhA l format)
+  plha v archive.lzh          # verbose list (LhA v format)
+  plha vv archive.lzh         # full verbose list (LhA vv format)
+  plha x archive.lzh          # extract all files
+  plha x archive.lzh foo.txt  # extract a specific file
+  plha t archive.lzh          # test archive integrity
+  plha d archive.lzh          # dump raw header data
+
+  # Override filename charset
+  plha -fc cp932 -tc UTF-8 v archive.lzh
+  plha -fc iso-8859-15 v archive.lzh
 
 =head1 DESCRIPTION
 
-plha is a simple command line tool to extract .lzh archives. It shows file list in an archive, and extracts all the files (or selected files) in the current working directory. No pathname conversion nor content filtering. No parent directory for the extracted files. Use this as a skeleton for your custom command line tool. Patches are welcome.
+B<plha> reads and extracts LZH/LHA archives using Amiga LhA-compatible output
+formats. It supports header levels 0, 1 and 2, and decompression methods
+lh0 (stored), lh5, lh6 and lh7.
+
+When invoked as B<plhasa>, a lhasa-compatible interface is activated with
+different listing formats (C<l> = terse, C<v> = verbose with METHOD and CRC
+columns) and lhasa-style argument parsing (C<[-]{lvtxep...}> prefix).
+
+=head1 COMMANDS
+
+=over 4
+
+=item l
+
+List archive contents in LhA terse format: one filename per line, with a
+C<+> prefix for files that contain a directory path component.
+
+=item v
+
+List archive contents in LhA verbose format: size, packed size, ratio,
+date, time and name.
+
+=item vv
+
+List archive contents in LhA full verbose format: size, packed size, ratio,
+date, time, attributes, compression method, CRC, header level, OS and name.
+
+=item x
+
+Extract files from the archive. If file names are given, only those are
+extracted; otherwise all files are extracted.
+
+=item t
+
+Test the integrity of all files in the archive by decoding and checking CRC.
+
+=item d
+
+Dump the raw parsed header data for each entry (for debugging).
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item -fc I<charset>
+
+Specify the character encoding of filenames stored in the archive
+(the "from" charset). Defaults to auto-detection based on the OS field
+in the archive header:
+
+  Amiga (a)        -> iso-8859-15
+  MS-DOS/Win (M/w) -> cp1252
+  Unix (U)         -> UTF-8
+  Human68K (H/J)   -> cp932
+
+If the OS field is absent or unrecognised, L<Encode::Guess> is used to
+guess from latin1, latin2, cp932 and euc-jp.
+
+Supported charset names are those accepted by L<Encode>. Run
+C<perl -MEncode -e 'print join "\n", Encode->encodings(":all")'>
+for a full list.
+
+=item -tc I<charset>
+
+Specify the output character encoding for displayed filenames (the "to"
+charset). Defaults to UTF-8.
+
+=back
+
+=head1 SEE ALSO
+
+L<Archive::Lha>, L<plhasa>, L<Encode>
 
 =head1 AUTHOR
 
 Nicolas Mendoza E<lt>mendoza@pvv.ntnu.noE<gt>
 
-Based on a skeleton originally by Tokuhiro Matsuno.
-
 =head1 LICENSE AND COPYRIGHT
 
 Copyright (c) 2025-2026 Nicolas Mendoza E<lt>mendoza@pvv.ntnu.noE<gt>.
 
-This module is free software; you can redistribute it and/or modify it under the same terms as Perl itself. See perlartistic.
+This module is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself. See L<perlartistic>.
