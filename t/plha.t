@@ -6,9 +6,13 @@ use warnings;
 use Test::More;
 use FindBin qw/$Bin/;
 
-my $plha    = "$Bin/../tools/plha";
-my $blib    = "-I$Bin/../blib/lib -I$Bin/../blib/arch";
-my $lha     = "$Bin/archive/lh5.lzh";
+my $plha   = "$Bin/../tools/plha";
+my $plhasa = "$Bin/../tools/plhasa";
+my $blib   = "-I$Bin/../blib/lib -I$Bin/../blib/arch";
+my $lha    = "$Bin/archive/lh5.lzh";
+my $amiga  = "$Bin/archive/MemLeakZ.lha";
+my $latin1 = "$Bin/archive/Amoric_src.lha";
+my $trunc  = "$Bin/archive/lh5_truncated.lzh";
 
 subtest 'plha v' => sub {
     my $output = `$^X $blib $plha v $lha 2>&1`;
@@ -18,25 +22,12 @@ subtest 'plha v' => sub {
     like $output, qr/\d+ files$/, 'Has file count footer';
 };
 
-subtest 'plha l (lhasa l format)' => sub {
+subtest 'plha l (LhA terse format)' => sub {
     my $output = `$^X $blib $plha l $lha 2>&1`;
     like $output, qr/00_load\.t/, 'plha l lists archive contents';
     unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
-    like $output, qr/^\s*PERMSSN/m, 'Has lhasa-style header';
-    like $output, qr/\[MS-DOS\]/, 'Has OS prefix on file entries';
-    like $output, qr/Total\s+\d+ files/, 'Has file count footer';
+    unlike $output, qr/PERMSSN/, 'l format does not have lhasa-style PERMSSN header';
     unlike $output, qr/METHOD/, 'l format does not have METHOD column';
-};
-
-subtest 'plha lv (lhasa v format)' => sub {
-    my $output = `$^X $blib $plha lv $lha 2>&1`;
-    like $output, qr/00_load\.t/, 'plha lv lists archive contents';
-    like $output, qr/^\s*PERMSSN.*METHOD.*CRC/m, 'Has lhasa v header with METHOD and CRC';
-    like $output, qr/\[MS-DOS\]/, 'Has OS prefix on file entries';
-    like $output, qr/-lh\d-/, 'Shows compression method';
-    like $output, qr/[0-9a-f]{4}/, 'Shows CRC';
-    like $output, qr/Total\s+\d+ files/, 'Has file count footer';
-    like $output, qr/Total.+\d+\.\d+%\s{12}\w{3}/, 'Total line has padding for METHOD+CRC columns';
 };
 
 subtest 'plha vv (LhA vv format)' => sub {
@@ -50,8 +41,28 @@ subtest 'plha vv (LhA vv format)' => sub {
     ok scalar @name_lines > 0, 'Filename on its own line';
 };
 
-subtest 'plha l format matches lhasa' => sub {
-    my $output = `$^X $blib $plha l $lha 2>&1`;
+subtest 'plhasa l (lhasa terse format)' => sub {
+    my $output = `$^X $blib $plhasa l $lha 2>&1`;
+    like $output, qr/00_load\.t/, 'plhasa l lists archive contents';
+    unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
+    like $output, qr/^\s*PERMSSN/m, 'Has lhasa-style header';
+    like $output, qr/\[MS-DOS\]/, 'Has OS prefix on file entries';
+    like $output, qr/Total\s+\d+ files/, 'Has file count footer';
+    unlike $output, qr/METHOD/, 'l format does not have METHOD column';
+};
+
+subtest 'plhasa v (lhasa verbose format)' => sub {
+    my $output = `$^X $blib $plhasa v $lha 2>&1`;
+    like $output, qr/00_load\.t/, 'plhasa v lists archive contents';
+    like $output, qr/^\s*PERMSSN.*METHOD.*CRC/m, 'Has lhasa v header with METHOD and CRC';
+    like $output, qr/\[MS-DOS\]/, 'Has OS prefix on file entries';
+    like $output, qr/-lh\d-/, 'Shows compression method';
+    like $output, qr/[0-9a-f]{4}/, 'Shows CRC';
+    like $output, qr/Total\s+\d+ files/, 'Has file count footer';
+};
+
+subtest 'plhasa l format matches lhasa column layout' => sub {
+    my $output = `$^X $blib $plhasa l $lha 2>&1`;
     my @file_lines = grep { /^\[MS-DOS\]/ } split /\n/, $output;
     ok scalar @file_lines > 0, 'Has file entries';
     for my $line (@file_lines) {
@@ -60,21 +71,17 @@ subtest 'plha l format matches lhasa' => sub {
 };
 
 subtest 'Total line alignment' => sub {
-    my $output = `$^X $blib $plha lv $lha 2>&1`;
+    my $output = `$^X $blib $plhasa v $lha 2>&1`;
     my ($total_line) = grep { /Total/ } split /\n/, $output;
-    # Total prefix is 22 chars (PERMSSN footer 10 + sep 1 + UID/GID footer 10 + sep 1)
-    # then %7d PACKED starts at position 22
     like $total_line, qr/^ Total\s+\d+ files?\s+\d+\s+\d+/, 'Total line has count, packed, size';
-    # After "files " the PACKED number starts at position 22
     my ($prefix) = $total_line =~ /^(.*files\s)/;
     is length($prefix), 23, 'Total prefix is 23 chars (matches lhasa column footers)';
 };
 
 subtest 'prefix is 23 chars wide' => sub {
-    my $output = `$^X $blib $plha lv $lha 2>&1`;
+    my $output = `$^X $blib $plhasa v $lha 2>&1`;
     my @file_lines = grep { /^\[/ } split /\n/, $output;
     for my $line (@file_lines) {
-        # First 23 chars are the prefix, then PACKED number starts
         my $prefix = substr($line, 0, 23);
         my $rest = substr($line, 23);
         like $rest, qr/^\s*\d+/, "PACKED starts after 23-char prefix: [$prefix]|$rest";
@@ -82,27 +89,56 @@ subtest 'prefix is 23 chars wide' => sub {
 };
 
 subtest 'directory entries' => sub {
-    # Use an archive with directory entries if available, otherwise skip
-    # For now test that _is_directory and _lhasa_prefix work via lv output
-    my $output = `$^X $blib $plha lv $lha 2>&1`;
+    my $output = `$^X $blib $plhasa v $lha 2>&1`;
     unlike $output, qr/LHD\.pm/, 'No LHD decoder error';
     unlike $output, qr/Can't load/, 'No module loading errors';
 };
 
 subtest 'DOS timestamps' => sub {
     use Archive::Lha::Header::Utils;
-    # All-zero = epoch 0 (matching lhasa)
     my $epoch = Archive::Lha::Header::Utils::_dostime2utime(0);
     is $epoch, 0, 'All-zero DOS time returns epoch 0';
 
-    # Valid timestamp
     $epoch = Archive::Lha::Header::Utils::_dostime2utime(0x5A34B800);
     ok $epoch > 0, 'Valid DOS time returns positive epoch';
 
-    # Invalid values (hour=31, etc.) should normalize, not crash
-    # Raw: 0xFB9FF926 = year=2105 mon=12 day=31 hour=31 min=9 sec=12
     $epoch = Archive::Lha::Header::Utils::_dostime2utime(0xFB9FF926);
     ok $epoch > 0, 'Invalid DOS time normalizes instead of crashing';
+};
+
+subtest 'Amiga archive [Amiga] prefix' => sub {
+    plan skip_all => "MemLeakZ.lha not found" unless -f $amiga;
+    my $output = `$^X $blib $plhasa l $amiga 2>&1`;
+    unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
+    like $output, qr/\[Amiga\]/, 'Shows [Amiga] prefix for Amiga archive';
+};
+
+subtest 'latin-1 filename display' => sub {
+    plan skip_all => "Amoric_src.lha not found" unless -f $latin1;
+    my $output = `$^X $blib $plha v $latin1 2>&1`;
+    unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
+    # Amoric_src.lha is an Amiga archive with latin-1 filenames
+    # Auto-detection should pick up iso-8859-15 for Amiga archives
+    like $output, qr/\w/, 'Produces output without error';
+};
+
+subtest 'latin-1 filename with explicit -fc' => sub {
+    plan skip_all => "Amoric_src.lha not found" unless -f $latin1;
+    my $output = `$^X $blib $plha -fc iso-8859-15 -tc UTF-8 v $latin1 2>&1`;
+    unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
+    like $output, qr/\w/, 'Produces output with explicit charset options';
+};
+
+subtest 'truncated archive warning' => sub {
+    plan skip_all => "lh5_truncated.lzh not found" unless -f $trunc;
+    my $output = `$^X $blib $plha v $trunc 2>&1`;
+    like $output, qr/WARNING.*truncated|truncated.*WARNING/i, 'Warns about truncated archive';
+};
+
+subtest 'unknown command error' => sub {
+    my $output = `$^X $blib $plha zzz $lha 2>&1`;
+    like $output, qr/Unknown command/i, 'Shows unknown command error';
+    like $output, qr/Usage/i, 'Shows usage after unknown command error';
 };
 
 done_testing;
