@@ -1,5 +1,5 @@
 Changes
-.gitignore
+README
 lib/Archive/Lha.c
 lib/Archive/Lha.h
 lib/Archive/Lha.pm
@@ -31,6 +31,8 @@ MANIFEST.SKIP
 t/00_load.t
 t/20_decode.t
 t/charset.t
+t/99_pod.t
+t/99_podcoverage.t
 t/archive/Amoric_src.lha
 t/archive/lh0.lzh
 t/archive/lh5.lzh
