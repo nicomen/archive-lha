@@ -1,6 +1,23 @@
 Revision history for Archive-Lha
 
-0.10  2026-05-06
+0.11  2026-05-07 (Nicolas Mendoza)
+    - OS-based filename charset auto-detection in pathname()
+      (Amiga->iso-8859-15, MS-DOS/Win->cp1252, Unix->UTF-8, X68K->cp932)
+    - plha l command: LhA terse listing format (filename only, + prefix for paths)
+    - plha -fc/-tc options: explicit from/to charset for filenames
+    - plhasa symlink: activates lhasa-compatible interface (l/v listing formats)
+    - Truncation detection in check_magic(): warn if last byte is not 0x00
+    - Fix Perl 5.38+ incompatibility in Decode::Base (constant subs closing over
+      lexicals): replaced with %_params hash keyed by subclass name
+    - Fix Decode::Base accessor redefinition warnings (_accessors_installed guard)
+    - Full POD rewrite for Archive::Lha and plha: encoding, charset table,
+      limitations, Amiga LhA command docs, Wayback Machine links for dead URLs
+    - Makefile.PL: added missing PREREQ_PM deps (Encode, File::Basename,
+      File::Path, Getopt::Long, Log::Dispatch, Data::Dump, Time::Moment)
+    - Test suite: Amiga and latin-1 test archives, truncation test,
+      unknown command error test, charset option tests
+
+0.10  2026-05-06 (Nicolas Mendoza)
     - Handle Level 0 file comments (null-byte separator in pathname)
     - Truncate pathnames and filenames at embedded null bytes
     - Parse Unix permissions (0x50), UID/GID (0x51), group name (0x52)
