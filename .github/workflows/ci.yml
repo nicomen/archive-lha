@@ -1,10 +1,11 @@
 name: CI
-
 on:
   push:
-    branches: [ main ]
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
   pull_request:
-    branches: [ main ]
 
 jobs:
   test:
@@ -19,31 +20,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: kenchan0130/actions-system-info@master
+        id: system-info
+
       - name: Set up Perl
         uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: ${{ matrix.perl }}
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/perl5
+          key: ${{ runner.os }}-${{ steps.system-info.outputs.release }}-perl-${{ matrix.perl }}-${{ hashFiles('Makefile.PL') }}
+
       - name: Install dependencies
-        run: |
-          cpanm --notest \
-            Exporter::Lite \
-            Encode \
-            File::Basename \
-            File::Path \
-            Getopt::Long \
-            Time::Moment \
-            Log::Dispatch \
-            Data::Dump \
-            File::Slurp \
-            Test::More \
-            Test::Pod \
-            Test::Pod::Coverage
+        run: cpanm --notest --installdeps .
 
       - name: Build
-        run: |
-          perl Makefile.PL
-          make
+        run: perl Makefile.PL && make
 
       - name: Test
-        run: make test TEST_POD=1
+        run: prove -wlvmb t
