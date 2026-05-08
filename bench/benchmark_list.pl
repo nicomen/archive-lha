@@ -1,42 +1,33 @@
 #!/usr/bin/perl
-# Benchmark Archive::Lha header parsing against lhasa
+# Benchmark plhasa listing against lhasa
 # Usage: perl -Iblib/lib -Iblib/arch bench/benchmark_list.pl [archive.lha ...]
 
 use strict;
 use warnings;
 use Benchmark qw( cmpthese timethese );
 use File::Basename;
-use Archive::Lha::Header;
-use Archive::Lha::Stream::File;
+use File::Spec;
 
 my @archives = @ARGV ? @ARGV : glob('t/archive/*.lzh t/archive/*.lha');
 
-my $lhasa = do { chomp(my $p = `which lhasa 2>/dev/null`); $p } || 'lhasa';
+my $lhasa  = do { chomp(my $p = `which lhasa 2>/dev/null`);  $p } || 'lhasa';
+my $plhasa = File::Spec->rel2abs('blib/script/plhasa');
 
 for my $archive (sort @archives) {
     next unless -f $archive;
     my $name = basename($archive);
 
-    # count entries
+    # count entries via lhasa
     my $n = 0;
-    {
-        my $s = Archive::Lha::Stream::File->new(file => $archive);
-        while (defined(my $l = $s->search_header)) {
-            my $h = Archive::Lha::Header->new(level => $l, stream => $s);
-            $s->seek($h->{next_header});
-            $n++;
-        }
-    }
+    { open my $fh, '-|', $lhasa, 'l', $archive or die $!; $n++ while <$fh>; close $fh; }
 
-    printf "\n=== %s (%d entries) ===\n", $name, $n;
+    printf "\n=== %s (~%d lines) ===\n", $name, $n;
 
-    my $results = timethese(50, {
-        'Archive::Lha' => sub {
-            my $s = Archive::Lha::Stream::File->new(file => $archive);
-            while (defined(my $l = $s->search_header)) {
-                my $h = Archive::Lha::Header->new(level => $l, stream => $s);
-                $s->seek($h->{next_header});
-            }
+    my $results = timethese(-3, {
+        'plhasa' => sub {
+            open my $fh, '-|', $^X, '-Iblib/lib', '-Iblib/arch', $plhasa, 'l', $archive or die $!;
+            1 while <$fh>;
+            close $fh;
         },
         'lhasa' => sub {
             open my $fh, '-|', $lhasa, 'l', $archive or die $!;
