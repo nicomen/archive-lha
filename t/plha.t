@@ -48,7 +48,6 @@ my $plhasa_l_expected = <<'END';
 [MS-DOS]                   223  70.4% Dec 10  2007 t/99_pod.t
 [MS-DOS]                   248  66.9% Dec 10  2007 t/99_podcoverage.t
 ---------- ----------- ------- ------ ------------ --------------------
- Total         3 files     553  72.9% Dec 18  2007
 END
 
 my $plhasa_v_expected = <<'END';
@@ -58,18 +57,22 @@ my $plhasa_v_expected = <<'END';
 [MS-DOS]                   157     223  70.4% -lh5- 69f4 Dec 10  2007 t/99_pod.t
 [MS-DOS]                   166     248  66.9% -lh5- 0dc1 Dec 10  2007 t/99_podcoverage.t
 ---------- ----------- ------- ------- ------ ---------- ------------ -------------
- Total         3 files     403     553  72.9%            Dec 18  2007
 END
+
+# Strip the Total line (contains archive mtime which changes) before comparing
+sub _strip_total { join '', grep { !/^ Total/ } split /^/m, $_[0] }
 
 subtest 'plhasa l (lhasa terse format)' => sub {
     my $output = `$^X $blib $plhasa l $lha 2>&1`;
     unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
-    is $output, $plhasa_l_expected, 'plhasa l output matches expected';
+    is _strip_total($output), $plhasa_l_expected, 'plhasa l output matches expected';
+    like $output, qr/^ Total\s+3 files\s+553\s+72\.9%/m, 'Total line correct';
 };
 
 subtest 'plhasa v (lhasa verbose format)' => sub {
     my $output = `$^X $blib $plhasa v $lha 2>&1`;
-    is $output, $plhasa_v_expected, 'plhasa v output matches expected';
+    is _strip_total($output), $plhasa_v_expected, 'plhasa v output matches expected';
+    like $output, qr/^ Total\s+3 files\s+403\s+553\s+72\.9%/m, 'Total line correct';
 };
 
 subtest 'plhasa l format matches lhasa column layout' => sub {
@@ -81,7 +84,8 @@ subtest 'plhasa l format matches lhasa column layout' => sub {
 };
 
 subtest 'Total line alignment' => sub {
-    my ($total_line) = grep { /Total/ } split /\n/, $plhasa_v_expected;
+    my $output = `$^X $blib $plhasa v $lha 2>&1`;
+    my ($total_line) = grep { /Total/ } split /\n/, $output;
     like $total_line, qr/^ Total\s+\d+ files?\s+\d+\s+\d+/, 'Total line has count, packed, size';
     my ($prefix) = $total_line =~ /^(.*files\s)/;
     is length($prefix), 23, 'Total prefix is 23 chars (matches lhasa column layout)';
