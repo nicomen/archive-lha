@@ -3,7 +3,6 @@ package Archive::Lha::Header::Level1;
 use strict;
 use warnings;
 use Carp;
-use List::Util qw( sum );
 use Archive::Lha::Constants;
 use Archive::Lha::Header::Base;
 use Archive::Lha::Header::Utils;
@@ -11,17 +10,18 @@ use Archive::Lha::Header::Utils;
 sub new {
   my ($class, $stream) = @_;
 
-  # stored size doesn't include the size of itself and the checksum
   my $start = $stream->tell;
-  my $size = ord( $stream->read(1) ) + 2;
+  my $size  = ord($stream->read(1)) + 2;
 
-  croak "Header is broken: size is too small: $size" if $size < 27;  # lhasa minimum is 25+2
+  croak "Header is broken: size is too small: $size" if $size < 27;
 
-  $stream->seek( $start );
-  my @bits = split '', $stream->read( $size );
+  $stream->seek($start);
+  my $buf = $stream->read($size);
 
-  my $checksum  = ord( $bits[1] );
-  my $checksum1 = ( sum( map { ord } @bits[2..$#bits] ) ) & CHAR_MAX;
+  my $checksum  = ord(substr($buf, 1, 1));
+  my $checksum1 = 0;
+  $checksum1 += $_ for unpack 'C*', substr($buf, 2);
+  $checksum1 &= CHAR_MAX;
   croak "Header is broken: checksum $checksum/$checksum1"
     unless $checksum == $checksum1;
 
@@ -29,40 +29,37 @@ sub new {
   $header{header_top}      = $start;
   $header{header_size}     = $size;
   $header{header_checksum} = $checksum;
-  $header{method}          = join '', @bits[3..5];
-  $header{skip_size}       = _int( @bits[7..10] );
-  $header{original_size}   = _int( @bits[11..14] );
-  $header{timestamp}       = _dostime2utime( _int( @bits[15..18] ) );
+  $header{method}          = substr($buf, 3, 3);
+  $header{skip_size}       = unpack 'V', substr($buf,  7, 4);
+  $header{original_size}   = unpack 'V', substr($buf, 11, 4);
+  $header{timestamp}       = _dostime2utime( unpack 'V', substr($buf, 15, 4) );
 
-  my $filename_length = ord( $bits[21] );
-  $header{filename}   = join '', @bits[22..(21 + $filename_length)];
-  $header{filename}   =~ s/\0.*//s;  # Truncate at null byte
-  $header{crc16}      = _short( @bits[(22 + $filename_length)..(23 + $filename_length)] );
-  $header{os}         = _os_id( $bits[(24 + $filename_length)] );
+  my $filename_length = ord(substr($buf, 21, 1));
+  $header{filename}   = substr($buf, 22, $filename_length);
+  $header{filename}   =~ s/\0.*//s;
+  $header{crc16}      = unpack 'v', substr($buf, 22 + $filename_length, 2);
+  $header{os}         = _os_id( substr($buf, 24 + $filename_length, 1) );
 
-  my $extended_from = 25 + $filename_length;
-  my $extended_to   = scalar @bits - 3;
-
-  if ( $extended_from < $extended_to ) {
-    my %extended_area = _extended_area(
-      @bits[$extended_from .. $extended_to]
-    );
-    %header = ( %header, %extended_area );
+  my $ext_from = 25 + $filename_length;
+  my $ext_to   = $size - 3;
+  if ($ext_from < $ext_to) {
+    my (undef, %ext) = _extended_header_buf($buf, $ext_from, $ext_to - $ext_from + 2);
+    %header = (%header, %ext) if %ext;
   }
 
   my $extended_size_total = 0;
-  my $extended_size = _short( @bits[-2..-1] );
-  while( $extended_size ) {
-    @bits = split '', $stream->read( $extended_size );
+  my $extended_size = unpack 'v', substr($buf, -2, 2);
+  while ($extended_size) {
+    my $chunk = $stream->read($extended_size);
     $extended_size_total += $extended_size;
-    my ($next, %hash) = _extended_header( @bits );
+    my ($next, %hash) = _extended_header_buf($chunk, 0, $extended_size);
     %header = (%header, %hash) if %hash;
     $extended_size = $next;
   }
   $header{encoded_size} = $header{skip_size} - $extended_size_total;
 
-  $header{data_top}     = $start + $size + $extended_size_total;
-  $header{next_header}  = $header{data_top} + $header{encoded_size};
+  $header{data_top}    = $start + $size + $extended_size_total;
+  $header{next_header} = $header{data_top} + $header{encoded_size};
 
   bless \%header, $class;
 }
