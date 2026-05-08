@@ -3,6 +3,15 @@ package Archive::Lha::Header;
 use strict;
 use warnings;
 use Carp;
+use Archive::Lha::Header::Level0;
+use Archive::Lha::Header::Level1;
+use Archive::Lha::Header::Level2;
+
+my @_parsers = (
+  'Archive::Lha::Header::Level0',
+  'Archive::Lha::Header::Level1',
+  'Archive::Lha::Header::Level2',
+);
 
 sub new {
   my ($class, %options) = @_;
@@ -10,14 +19,11 @@ sub new {
   croak "Stream is missing"       unless defined $options{stream};
   croak "Header level is missing" unless defined $options{level};
 
-  croak "Illegal header level: $options{level}"
-    unless $options{level} =~ /^(?:[0-2])$/;
+  my $level = $options{level};
+  croak "Illegal header level: $level"
+    unless $level =~ /^[0-2]$/;
 
-  my $package = 'Archive::Lha::Header::Level'.$options{level};
-  eval "require $package;";
-  croak "Can't load header parser: $@" if $@;
-
-  $package->new( $options{stream} );
+  $_parsers[$level]->new( $options{stream} );
 }
 
 1;

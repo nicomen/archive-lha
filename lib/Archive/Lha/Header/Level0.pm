@@ -19,9 +19,9 @@ sub new {
   my $buf = $stream->read($size);
 
   my $checksum  = ord(substr($buf, 1, 1));
-  my $checksum1 = 0;
-  $checksum1 += $_ for unpack 'C*', substr($buf, 2);
-  $checksum1 &= CHAR_MAX;
+  my $checksum1 = defined &Archive::Lha::Header::Utils::checksum
+    ? Archive::Lha::Header::Utils::checksum($buf, 2)
+    : do { my $s = 0; $s += $_ for unpack 'C*', substr($buf, 2); $s & CHAR_MAX };
   croak "Header is broken: pos:$start checksum $checksum/$checksum1"
     unless $checksum == $checksum1;
 
@@ -32,7 +32,7 @@ sub new {
   $header{method}          = substr($buf, 3, 3);
   $header{encoded_size}    = unpack 'V', substr($buf,  7, 4);
   $header{original_size}   = unpack 'V', substr($buf, 11, 4);
-  $header{timestamp}       = _dostime2utime( unpack 'V', substr($buf, 15, 4) );
+  $header{timestamp}       = unpack 'V', substr($buf, 15, 4);
 
   my $pathname_length = ord(substr($buf, 21, 1));
   $header{pathname}   = substr($buf, 22, $pathname_length);
@@ -43,8 +43,8 @@ sub new {
 
   my $ext_from = 24 + $pathname_length;
   if ($ext_from < $size) {
-    my (undef, %ext) = _extended_header_buf($buf, $ext_from, $size - $ext_from);
-    %header = (%header, %ext) if %ext;
+    my (undef, $ext) = _extended_header_buf($buf, $ext_from, $size - $ext_from);
+    %header = (%header, %{ $ext }) if %{ $ext };
   }
 
   $header{data_top}    = $start + $size;
