@@ -1,5 +1,22 @@
 Revision history for Archive-Lha
 
+0.13  2026-05-09 (Nicolas Mendoza)
+    - XS implementations of checksum and dostime2utime in
+      Archive::Lha::Header::Utils; pure-Perl fallbacks retained
+    - Store raw DOS integer in header{timestamp} for Level0/1; new
+      timestamp_is_unix flag distinguishes DOS from Unix epoch at display time
+    - Preload Level0/1/2 header parsers; dispatch via array instead of eval
+    - Fix filename charset for UNIX-tagged archives: use Encode::Guess
+      instead of assuming UTF-8 (fixes latin-1 filenames e.g. "Français")
+    - plha l: show filename node only (no path), matching Amiga LhA guide
+    - plha v/vv: fix timestamps for Level0/1 archives; display CRC uppercase
+    - plha/plhasa: English month names by default (LC_TIME=C), matching
+      lhasa and LhA for UNIX which both hardcode a static months[] array
+    - Add --use-locale flag to opt in to system locale month names
+    - Add --from-charset/--to-charset as long forms of -fc/-tc
+    - CI: run on all branches, use cpanm --installdeps, cache deps,
+      use prove -wlvmb t; hardcode expected plhasa output in tests
+
 0.12  2026-05-08 (Nicolas Mendoza)
     - Install plhasa via EXE_FILES instead of postamble symlink so it
       is correctly installed by cpanm (postamble install targets are
