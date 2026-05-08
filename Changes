@@ -4,6 +4,7 @@ Revision history for Archive-Lha
     - Install plhasa via EXE_FILES instead of postamble symlink so it
       is correctly installed by cpanm (postamble install targets are
       skipped by cpanm)
+    - Add GitHub repository URL to CPAN metadata
 
 0.11  2026-05-07 (Nicolas Mendoza)
     - OS-based filename charset auto-detection in pathname()

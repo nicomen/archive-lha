@@ -34,11 +34,11 @@ WriteMakefile(
         resources   => {
             repository => {
                 type => 'git',
-                url  => 'https://github.com/nicomen/Archive-Lha.git',
-                web  => 'https://github.com/nicomen/Archive-Lha',
+                url  => 'https://github.com/nicomen/archive-lha.git',
+                web  => 'https://github.com/nicomen/archive-lha',
             },
             bugtracker => {
-                web => 'https://github.com/nicomen/Archive-Lha/issues',
+                web => 'https://github.com/nicomen/archive-lha/issues',
             },
         },
     },
