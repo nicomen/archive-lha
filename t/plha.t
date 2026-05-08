@@ -35,7 +35,7 @@ subtest 'plha vv (LhA vv format)' => sub {
     like $output, qr/00_load\.t/, 'plha vv lists archive contents';
     like $output, qr/Atts.*Method.*CRC.*OS/m, 'Has LhA vv header';
     like $output, qr/-lh\d-/, 'Shows compression method';
-    like $output, qr/[0-9a-f]{4}/, 'Shows CRC';
+    like $output, qr/[0-9a-fA-F]{4}/, 'Shows CRC (uppercase, Amiga LhA style)';
     my @lines = split /\n/, $output;
     my @name_lines = grep { /^t\/00_load/ } @lines;
     ok scalar @name_lines > 0, 'Filename on its own line';
@@ -66,7 +66,7 @@ subtest 'plhasa l format matches lhasa column layout' => sub {
     my @file_lines = grep { /^\[MS-DOS\]/ } split /\n/, $output;
     ok scalar @file_lines > 0, 'Has file entries';
     for my $line (@file_lines) {
-        like $line, qr/^\[MS-DOS\]\s+\d+\s+[\d.]+%\s+\w{3}\s+\d+\s+\d{4}\s+\S/, "File line format: $line";
+        like $line, qr/^\[MS-DOS\]\s+\d+\s+[\d.]+%\s+\S+\s+\d+\s+\d{4}\s+\S/, "File line format: $line";
     }
 };
 

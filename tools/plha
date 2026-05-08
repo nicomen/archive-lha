@@ -13,9 +13,12 @@ use lib File::Spec->catfile($FindBin::Bin, '..', 'lib');
 
 use Archive::Lha::Decode;
 use Archive::Lha::Header;
+use Archive::Lha::Header::Utils ();
 use Archive::Lha::Stream::File;
 use Carp;
+use POSIX qw( strftime setlocale LC_TIME );
 use Time::Moment;
+setlocale(LC_TIME, 'C');
 
 # Charset options: -fc (from charset) and -tc (to charset)
 my $opt_from_charset;
@@ -51,11 +54,13 @@ my $controller = +{
                 stream => $stream
             );
             $stream->seek( $header->{next_header} );
-            my $name = _display_name($header);
-            $name = '' if $name eq '.';
+            my $fullname = _display_name($header);
+            $fullname = '' if $fullname eq '.';
+            my $has_path = ($fullname =~ m{/} && !_is_directory($header));
+            # l shows filename only (no path), + prefix if file has a path component
+            my $name = $has_path ? (split m{/}, $fullname)[-1] : $fullname;
             $name .= '/' if _is_directory($header) && $name ne '' && $name !~ m{/$};
-            # + prefix if the name contains a path component
-            my $prefix = ($name =~ m{/} && !_is_directory($header)) ? '+' : ' ';
+            my $prefix = $has_path ? '+' : ' ';
             printf "%s%s\n", $prefix, $name;
         }
     },
@@ -80,8 +85,8 @@ my $controller = +{
               $header->{original_size},
               $header->{encoded_size},
               (($header->{encoded_size} && $header->{original_size}) ? 100 * ($header->{original_size} - $header->{encoded_size}) / $header->{original_size} : 0),
-              Time::Moment->from_epoch($header->{timestamp})->strftime("%d-%b-%y"),
-              Time::Moment->from_epoch($header->{timestamp})->strftime("%T"),
+              _header_date($header),
+              _header_time($header),
               _display_name($header);
             printf ": %s\n", $header->{comment} if $header->{comment};
         }
@@ -90,8 +95,8 @@ my $controller = +{
              $totals->{original_size},
              $totals->{encoded_size},
              (($totals->{encoded_size} && $totals->{original_size}) ? 100 * ($totals->{original_size} - $totals->{encoded_size}) / $totals->{original_size} : 0),
-             Time::Moment->from_epoch((stat($fname))[9])->strftime("%d-%b-%y"),
-             Time::Moment->from_epoch((stat($fname))[9])->strftime("%T"),
+             strftime("%d-%b-%y", localtime((stat($fname))[9])),
+             strftime("%T",       localtime((stat($fname))[9])),
              (sprintf(" %d files", $totals->{count}));
     },
     vv => sub {
@@ -116,12 +121,12 @@ my $controller = +{
             my $hdr_level = ref($header) =~ /Level(\d)/ ? $1 : '?';
 
             printf "%s\n", $name;
-            printf "%8d %7d%5.1f%% %s %s ----rwed  -%s- %04x %s %s\n",
+            printf "%8d %7d%5.1f%% %s %s ----rwed  -%s- %04X %s %s\n",
               $header->{original_size},
               $header->{encoded_size},
               (($header->{encoded_size} && $header->{original_size}) ? 100 * ($header->{original_size} - $header->{encoded_size}) / $header->{original_size} : 0),
-              Time::Moment->from_epoch($header->{timestamp})->strftime("%d-%b-%y"),
-              Time::Moment->from_epoch($header->{timestamp})->strftime("%T"),
+              _header_date($header),
+              _header_time($header),
               $header->{method},
               $header->{crc16},
               $hdr_level,
@@ -133,8 +138,8 @@ my $controller = +{
              $totals->{original_size},
              $totals->{encoded_size},
              (($totals->{encoded_size} && $totals->{original_size}) ? 100 * ($totals->{original_size} - $totals->{encoded_size}) / $totals->{original_size} : 0),
-             Time::Moment->from_epoch((stat($fname))[9])->strftime("%d-%b-%y"),
-             Time::Moment->from_epoch((stat($fname))[9])->strftime("%T"),
+             strftime("%d-%b-%y", localtime((stat($fname))[9])),
+             strftime("%T",       localtime((stat($fname))[9])),
              (sprintf(" %d files", $totals->{count}));
     },
     t => sub {
@@ -371,16 +376,42 @@ sub usage {
     die $text;
 }
 
-# ls-style date: show time if within ~6 months, year otherwise
+sub _header_date {
+    my ($h) = @_;
+    return $h->{timestamp_is_unix}
+        ? strftime("%d-%b-%y", localtime($h->{timestamp}))
+        : strftime("%d-%b-%y", Archive::Lha::Header::Utils::dostime_fields($h->{timestamp}));
+}
+
+sub _header_time {
+    my ($h) = @_;
+    return $h->{timestamp_is_unix}
+        ? strftime("%T", localtime($h->{timestamp}))
+        : strftime("%T", Archive::Lha::Header::Utils::dostime_fields($h->{timestamp}));
+}
+
+# ls-style date from Unix epoch (stat mtime etc)
 sub _ls_stamp {
     my ($epoch) = @_;
-    my $now = time;
     my $six_months = 6 * 30 * 86400;
-    my $tm = Time::Moment->from_epoch($epoch);
-    if (abs($now - $epoch) < $six_months) {
-        return $tm->strftime("%b %e %H:%M");
+    if (abs(time - $epoch) < $six_months) {
+        return strftime("%b %e %H:%M", localtime($epoch));
     }
-    return $tm->strftime("%b %e  %Y");
+    return strftime("%b %e  %Y", localtime($epoch));
+}
+
+# ls-style date from a header (handles both DOS and Unix timestamps)
+sub _ls_stamp_header {
+    my ($header) = @_;
+    if ($header->{timestamp_is_unix}) {
+        return _ls_stamp($header->{timestamp});
+    }
+    my @t = Archive::Lha::Header::Utils::dostime_fields($header->{timestamp});
+    my $epoch = POSIX::mktime(@t);
+    my $six_months = 6 * 30 * 86400;
+    return abs(time - $epoch) < $six_months
+        ? strftime("%b %e %H:%M", @t)
+        : strftime("%b %e  %Y",  @t);
 }
 
 # Lhasa-compatible listing (l = terse, lv = verbose with method+crc)
@@ -409,7 +440,7 @@ sub _list_lhasa {
         $totals->{encoded_size}  += $header->{encoded_size};
         $totals->{count}         += 1;
 
-        my $stamp = _ls_stamp($header->{timestamp});
+        my $stamp = _ls_stamp_header($header);
         my $name  = _display_name($header);
         $name = '' if $name eq '.';  # empty root directory
         $name .= '/' if _is_directory($header) && $name ne '' && $name !~ m{/$};
