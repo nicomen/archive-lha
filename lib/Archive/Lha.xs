@@ -4,11 +4,14 @@
   This XS is, though largely modified, based on LHa for UNIX.
   See lib/Archive/Lha.pm for Authors/Copyright/License information.
 */
+#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
 #include "Lha.h"
+#include <time.h>
 
 /*
   these are not from LHa for UNIX
@@ -549,6 +552,44 @@ xs_update(unsigned short crc, SV * str, STRLEN len)
   CODE:
     RETVAL = calc_crc16(crc, SvPV(str, len), len);
 
+  OUTPUT:
+    RETVAL
+
+MODULE = Archive::Lha PACKAGE = Archive::Lha::Header::Utils PREFIX = xs_
+
+PROTOTYPES: DISABLE
+
+unsigned char
+xs_checksum(SV * buf, STRLEN offset)
+  CODE:
+    STRLEN len;
+    unsigned char * s = (unsigned char *) SvPV(buf, len);
+    unsigned char sum = 0;
+    STRLEN i;
+    for (i = offset; i < len; i++)
+      sum += s[i];
+    RETVAL = sum;
+  OUTPUT:
+    RETVAL
+
+IV
+xs_dostime2utime(U32 v)
+  CODE:
+    struct tm t;
+    time_t result;
+    if (v == 0) {
+      RETVAL = 0;
+    } else {
+      t.tm_sec   = (v & 0x1F) * 2;
+      t.tm_min   = (v >>  5) & 0x3F;
+      t.tm_hour  = (v >> 11) & 0x1F;
+      t.tm_mday  = (v >> 16) & 0x1F;
+      t.tm_mon   = ((v >> 21) & 0x0F) - 1;
+      t.tm_year  = ((v >> 25) & 0x7F) + 80;
+      t.tm_isdst = -1;
+      result = mktime(&t);
+      RETVAL = (result == (time_t)-1) ? 0 : (IV)result;
+    }
   OUTPUT:
     RETVAL
 

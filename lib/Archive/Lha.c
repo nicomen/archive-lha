@@ -13,11 +13,14 @@
   This XS is, though largely modified, based on LHa for UNIX.
   See lib/Archive/Lha.pm for Authors/Copyright/License information.
 */
+#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
 #include "Lha.h"
+#include <time.h>
 
 /*
   these are not from LHa for UNIX
@@ -459,7 +462,7 @@ init_tables(HV * self, LhaStash * stash)
   stash->c    = c_table;
 }
 
-#line 463 "lib/Archive/Lha.c"
+#line 466 "lib/Archive/Lha.c"
 #ifndef PERL_UNUSED_VAR
 #  define PERL_UNUSED_VAR(var) if (0) var = var
 #endif
@@ -603,7 +606,7 @@ S_croak_xs_usage(const CV *const cv, const char *const params)
 #  define newXS_deffile(a,b) Perl_newXS_deffile(aTHX_ a,b)
 #endif
 
-#line 607 "lib/Archive/Lha.c"
+#line 610 "lib/Archive/Lha.c"
 
 XS_EUPXS(XS_Archive__Lha__Decode__Base_decode); /* prototype to pass -Wmissing-prototypes */
 XS_EUPXS(XS_Archive__Lha__Decode__Base_decode)
@@ -616,7 +619,7 @@ XS_EUPXS(XS_Archive__Lha__Decode__Base_decode)
 ;
 	unsigned short	RETVAL;
 	dXSTARG;
-#line 468 "lib/Archive/Lha.xs"
+#line 471 "lib/Archive/Lha.xs"
     HV * self;
     unsigned char * queue;
     LhaStash      * stash;
@@ -687,7 +690,7 @@ XS_EUPXS(XS_Archive__Lha__Decode__Base_decode)
 
     RETVAL = crc16;
 
-#line 691 "lib/Archive/Lha.c"
+#line 694 "lib/Archive/Lha.c"
 	XSprePUSH;
 	PUSHu((UV)RETVAL);
     }
@@ -710,12 +713,76 @@ XS_EUPXS(XS_Archive__Lha__CRC_update)
 ;
 	STRLEN	len = (STRLEN)SvUV(ST(2))
 ;
-#line 550 "lib/Archive/Lha.xs"
+#line 553 "lib/Archive/Lha.xs"
     RETVAL = calc_crc16(crc, SvPV(str, len), len);
 
-#line 717 "lib/Archive/Lha.c"
+#line 720 "lib/Archive/Lha.c"
 	XSprePUSH;
 	PUSHu((UV)RETVAL);
+    }
+    XSRETURN(1);
+}
+
+
+XS_EUPXS(XS_Archive__Lha__Header__Utils_checksum); /* prototype to pass -Wmissing-prototypes */
+XS_EUPXS(XS_Archive__Lha__Header__Utils_checksum)
+{
+    dVAR; dXSARGS;
+    if (items != 2)
+       croak_xs_usage(cv,  "buf, offset");
+    {
+	unsigned char	RETVAL;
+	dXSTARG;
+	SV *	buf = ST(0)
+;
+	STRLEN	offset = (STRLEN)SvUV(ST(1))
+;
+#line 565 "lib/Archive/Lha.xs"
+    STRLEN len;
+    unsigned char * s = (unsigned char *) SvPV(buf, len);
+    unsigned char sum = 0;
+    STRLEN i;
+    for (i = offset; i < len; i++)
+      sum += s[i];
+    RETVAL = sum;
+#line 749 "lib/Archive/Lha.c"
+	XSprePUSH;
+	PUSHu((UV)RETVAL);
+    }
+    XSRETURN(1);
+}
+
+
+XS_EUPXS(XS_Archive__Lha__Header__Utils_dostime2utime); /* prototype to pass -Wmissing-prototypes */
+XS_EUPXS(XS_Archive__Lha__Header__Utils_dostime2utime)
+{
+    dVAR; dXSARGS;
+    if (items != 1)
+       croak_xs_usage(cv,  "v");
+    {
+	IV	RETVAL;
+	dXSTARG;
+	U32	v = (unsigned long)SvUV(ST(0))
+;
+#line 578 "lib/Archive/Lha.xs"
+    struct tm t;
+    time_t result;
+    if (v == 0) {
+      RETVAL = 0;
+    } else {
+      t.tm_sec   = (v & 0x1F) * 2;
+      t.tm_min   = (v >>  5) & 0x3F;
+      t.tm_hour  = (v >> 11) & 0x1F;
+      t.tm_mday  = (v >> 16) & 0x1F;
+      t.tm_mon   = ((v >> 21) & 0x0F) - 1;
+      t.tm_year  = ((v >> 25) & 0x7F) + 80;
+      t.tm_isdst = -1;
+      result = mktime(&t);
+      RETVAL = (result == (time_t)-1) ? 0 : (IV)result;
+    }
+#line 784 "lib/Archive/Lha.c"
+	XSprePUSH;
+	PUSHi((IV)RETVAL);
     }
     XSRETURN(1);
 }
@@ -750,6 +817,8 @@ XS_EXTERNAL(boot_Archive__Lha)
 
         newXS_deffile("Archive::Lha::Decode::Base::decode", XS_Archive__Lha__Decode__Base_decode);
         newXS_deffile("Archive::Lha::CRC::update", XS_Archive__Lha__CRC_update);
+        newXS_deffile("Archive::Lha::Header::Utils::checksum", XS_Archive__Lha__Header__Utils_checksum);
+        newXS_deffile("Archive::Lha::Header::Utils::dostime2utime", XS_Archive__Lha__Header__Utils_dostime2utime);
 #if PERL_VERSION_LE(5, 21, 5)
 #  if PERL_VERSION_GE(5, 9, 0)
     if (PL_unitcheckav)

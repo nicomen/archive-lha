@@ -3,11 +3,13 @@ package Archive::Lha::Header::Utils;
 use strict;
 use warnings;
 use Carp;
+use Time::Local ();
 use POSIX ();
+eval { require Archive::Lha::Decode::Base };  # bootstrap XS functions
 use Exporter::Lite;
 
 our @EXPORT = qw(
-  _int _short _dostime2utime _os_id _extended_header _extended_header_buf
+  _int _short _dostime2utime dostime_fields _os_id _extended_header _extended_header_buf
 );
 
 sub _int   { unpack 'V', ( pack 'aaaa', @_ ) }
@@ -17,22 +19,34 @@ sub _short { unpack 'v', ( pack 'aa',   @_ ) }
 sub _int_at   { unpack 'V', substr($_[0], $_[1], 4) }
 sub _short_at { unpack 'v', substr($_[0], $_[1], 2) }
 
-sub _dostime2utime {
-  return 0 unless @_ && $_[0];  # All-zero timestamp = epoch 0
-
-  # DOS datetime: bits 31-25=year(+1980) 24-21=month 20-16=day
-  #               15-11=hour 10-5=minute 4-0=sec(/2)
+# Decode DOS timestamp into (sec, min, hour, mday, mon_0based, year_since_1900)
+sub dostime_fields {
+  return (0) x 6 unless @_ && $_[0];
   my $v = $_[0];
-  my $year = (($v >> 25) & 0x7F) + 1980;
-  my $mon  =  ($v >> 21) & 0x0F;
-  my $day  =  ($v >> 16) & 0x1F;
-  my $hour =  ($v >> 11) & 0x1F;
-  my $min  =  ($v >>  5) & 0x3F;
-  my $sec  =  ($v        & 0x1F) * 2;
+  return (
+    ($v & 0x1F) * 2,
+    ($v >>  5) & 0x3F,
+    ($v >> 11) & 0x1F,
+    ($v >> 16) & 0x1F,
+    (($v >> 21) & 0x0F) - 1,
+    (($v >> 25) & 0x7F) + 80,
+  );
+}
 
-  # Use POSIX::mktime which normalizes out-of-range values (like hour=31)
-  # matching C mktime behavior used by lhasa
-  POSIX::mktime($sec, $min, $hour, $day, $mon - 1, $year - 1900) // 0;
+sub _dostime2utime {
+  return 0 unless @_ && $_[0];
+  return Archive::Lha::Header::Utils::dostime2utime($_[0])
+    if defined &Archive::Lha::Header::Utils::dostime2utime;
+  my $v = $_[0];
+  my @t = (
+    ($v & 0x1F) * 2,
+    ($v >>  5) & 0x3F,
+    ($v >> 11) & 0x1F,
+    ($v >> 16) & 0x1F,
+    (($v >> 21) & 0x0F) - 1,
+    (($v >> 25) & 0x7F) + 80,
+  );
+  eval { Time::Local::timegm(@t) } // POSIX::mktime(@t[0..5]) // 0;
 }
 
 sub _os_id {
@@ -60,8 +74,7 @@ sub _os_id {
 
 # Legacy: called with a list of single chars
 sub _extended_header {
-  my @bits = @_;
-  my $buf = join '', @bits;
+  my $buf = join '', @_;
   return _extended_header_buf($buf, 0, length($buf));
 }
 
@@ -98,7 +111,8 @@ sub _extended_header_buf {
     $hash{unix_group} = substr($buf, $from + 1, $len - 3);
   }
   elsif ( $type == 0x54 ) {
-    $hash{timestamp} = unpack 'V', substr($buf, $from + 1, 4);
+    $hash{timestamp}         = unpack 'V', substr($buf, $from + 1, 4);
+    $hash{timestamp_is_unix} = 1;
   }
   elsif ( $type == 0x39 || $type == 0x3F || $type == 0x40 || $type == 0x41
        || $type == 0x42 || $type == 0x46 || $type == 0x7D || $type == 0x7E ) {
@@ -108,7 +122,7 @@ sub _extended_header_buf {
     warn sprintf "Unknown extended header type: %02x\n", $type;
   }
 
-  return ($next, %hash);
+  return ($next, \%hash);
 }
 
 1;

@@ -24,7 +24,8 @@ sub new {
   $header{method}        = substr($buf, 3, 3);
   $header{encoded_size}  = unpack 'V', substr($buf,  7, 4);
   $header{original_size} = unpack 'V', substr($buf, 11, 4);
-  $header{timestamp}     = unpack 'V', substr($buf, 15, 4);
+  $header{timestamp}         = unpack 'V', substr($buf, 15, 4);
+  $header{timestamp_is_unix} = 1;
   $header{crc16}         = unpack 'v', substr($buf, 21, 2);
   $header{os}            = _os_id( substr($buf, 23, 1) );
   $header{data_top}      = $start + $size;
@@ -33,8 +34,8 @@ sub new {
   my $from          = 26;
   my $extended_size = unpack 'v', substr($buf, 24, 2);
   while ($extended_size) {
-    my ($next, %hash) = _extended_header_buf($buf, $from, $extended_size);
-    %header = (%header, %hash) if %hash;
+    my ($next, $hash) = _extended_header_buf($buf, $from, $extended_size);
+    %header = (%header, %{ $hash }) if %{ $hash };
     $from         += $extended_size;
     $extended_size = $next;
   }
