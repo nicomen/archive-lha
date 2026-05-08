@@ -41,29 +41,39 @@ subtest 'plha vv (LhA vv format)' => sub {
     ok scalar @name_lines > 0, 'Filename on its own line';
 };
 
+my $plhasa_l_expected = <<'END';
+ PERMSSN    UID  GID      SIZE  RATIO     STAMP           NAME
+---------- ----------- ------- ------ ------------ --------------------
+[MS-DOS]                    82  97.6% Dec 10  2007 t/00_load.t
+[MS-DOS]                   223  70.4% Dec 10  2007 t/99_pod.t
+[MS-DOS]                   248  66.9% Dec 10  2007 t/99_podcoverage.t
+---------- ----------- ------- ------ ------------ --------------------
+ Total         3 files     553  72.9% Dec 18  2007
+END
+
+my $plhasa_v_expected = <<'END';
+ PERMSSN    UID  GID    PACKED    SIZE  RATIO METHOD CRC     STAMP          NAME
+---------- ----------- ------- ------- ------ ---------- ------------ -------------
+[MS-DOS]                    80      82  97.6% -lh5- c750 Dec 10  2007 t/00_load.t
+[MS-DOS]                   157     223  70.4% -lh5- 69f4 Dec 10  2007 t/99_pod.t
+[MS-DOS]                   166     248  66.9% -lh5- 0dc1 Dec 10  2007 t/99_podcoverage.t
+---------- ----------- ------- ------- ------ ---------- ------------ -------------
+ Total         3 files     403     553  72.9%            Dec 18  2007
+END
+
 subtest 'plhasa l (lhasa terse format)' => sub {
     my $output = `$^X $blib $plhasa l $lha 2>&1`;
-    like $output, qr/00_load\.t/, 'plhasa l lists archive contents';
     unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
-    like $output, qr/^\s*PERMSSN/m, 'Has lhasa-style header';
-    like $output, qr/\[MS-DOS\]/, 'Has OS prefix on file entries';
-    like $output, qr/Total\s+\d+ files/, 'Has file count footer';
-    unlike $output, qr/METHOD/, 'l format does not have METHOD column';
+    is $output, $plhasa_l_expected, 'plhasa l output matches expected';
 };
 
 subtest 'plhasa v (lhasa verbose format)' => sub {
     my $output = `$^X $blib $plhasa v $lha 2>&1`;
-    like $output, qr/00_load\.t/, 'plhasa v lists archive contents';
-    like $output, qr/^\s*PERMSSN.*METHOD.*CRC/m, 'Has lhasa v header with METHOD and CRC';
-    like $output, qr/\[MS-DOS\]/, 'Has OS prefix on file entries';
-    like $output, qr/-lh\d-/, 'Shows compression method';
-    like $output, qr/[0-9a-f]{4}/, 'Shows CRC';
-    like $output, qr/Total\s+\d+ files/, 'Has file count footer';
+    is $output, $plhasa_v_expected, 'plhasa v output matches expected';
 };
 
 subtest 'plhasa l format matches lhasa column layout' => sub {
-    my $output = `$^X $blib $plhasa l $lha 2>&1`;
-    my @file_lines = grep { /^\[MS-DOS\]/ } split /\n/, $output;
+    my @file_lines = grep { /^\[MS-DOS\]/ } split /\n/, $plhasa_l_expected;
     ok scalar @file_lines > 0, 'Has file entries';
     for my $line (@file_lines) {
         like $line, qr/^\[MS-DOS\]\s+\d+\s+[\d.]+%\s+\S+\s+\d+\s+\d{4}\s+\S/, "File line format: $line";
@@ -71,16 +81,14 @@ subtest 'plhasa l format matches lhasa column layout' => sub {
 };
 
 subtest 'Total line alignment' => sub {
-    my $output = `$^X $blib $plhasa v $lha 2>&1`;
-    my ($total_line) = grep { /Total/ } split /\n/, $output;
+    my ($total_line) = grep { /Total/ } split /\n/, $plhasa_v_expected;
     like $total_line, qr/^ Total\s+\d+ files?\s+\d+\s+\d+/, 'Total line has count, packed, size';
     my ($prefix) = $total_line =~ /^(.*files\s)/;
-    is length($prefix), 23, 'Total prefix is 23 chars (matches lhasa column footers)';
+    is length($prefix), 23, 'Total prefix is 23 chars (matches lhasa column layout)';
 };
 
 subtest 'prefix is 23 chars wide' => sub {
-    my $output = `$^X $blib $plhasa v $lha 2>&1`;
-    my @file_lines = grep { /^\[/ } split /\n/, $output;
+    my @file_lines = grep { /^\[/ } split /\n/, $plhasa_v_expected;
     for my $line (@file_lines) {
         my $prefix = substr($line, 0, 23);
         my $rest = substr($line, 23);
