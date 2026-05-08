@@ -18,11 +18,19 @@ use Archive::Lha::Stream::File;
 use Carp;
 use POSIX qw( strftime setlocale LC_TIME );
 use Time::Moment;
-setlocale(LC_TIME, 'C');
 
 # Charset options: -fc (from charset) and -tc (to charset)
 my $opt_from_charset;
 my $opt_to_charset;
+my $opt_use_locale;
+
+# Parse --use-locale before anything else so setlocale runs at startup
+Getopt::Long::GetOptionsFromArray(\@ARGV,
+    'use-locale'              => \$opt_use_locale,
+    'from-charset|fc=s'      => \$opt_from_charset,
+    'to-charset|tc=s'        => \$opt_to_charset,
+);
+setlocale(LC_TIME, 'C') unless $opt_use_locale;
 
 # Return display name for a header, respecting -fc/-tc options.
 # Without options, pathname() auto-detects from the OS field.
@@ -223,8 +231,9 @@ sub main {
 
 sub _main_plha {
     GetOptionsFromArray(\@ARGV,
-        'fc=s' => \$opt_from_charset,
-        'tc=s' => \$opt_to_charset,
+        'from-charset|fc=s' => \$opt_from_charset,
+        'to-charset|tc=s'   => \$opt_to_charset,
+        'use-locale'        => \$opt_use_locale,
     );
     my $cmd = shift @ARGV or usage();
     my $file = shift @ARGV or usage();
@@ -361,15 +370,16 @@ sub usage_lhasa {
 
 sub usage {
     my ($msg) = @_;
-    my $text = "Usage: $0 [-fc charset] [-tc charset] (l|v|vv|x|t|d) archive (files)\n" .
+    my $text = "Usage: $0 [options] (l|v|vv|x|t|d) archive (files)\n" .
         " l  - list contents (LhA terse format, filename only)\n" .
         " v  - list archive verbose (LhA v format)\n" .
         " vv - list archive full (LhA vv format)\n" .
         " x  - extract archive\n" .
         " t  - test file\n" .
         " d  - dump each header\n" .
-        " -fc <charset>  from-charset for filenames (default: auto-detect)\n" .
-        " -tc <charset>  to-charset for filenames (default: UTF-8)\n";
+        " -fc, --from-charset <charset>  source encoding for filenames (default: auto-detect)\n" .
+        " -tc, --to-charset <charset>    output encoding for filenames (default: UTF-8)\n" .
+        " --use-locale                   use system locale for month names (default: English)\n";
     if ($msg) {
         die "$msg\n$text";
     }
@@ -590,7 +600,7 @@ plha / plhasa - command line tool for .lzh/.lha archives
 
 =head1 SYNOPSIS
 
-  plha [-fc charset] [-tc charset] <command> archive.lzh [files...]
+  plha [options] <command> archive.lzh [files...]
 
   plha l archive.lzh          # terse list (LhA l format)
   plha v archive.lzh          # verbose list (LhA v format)
@@ -606,7 +616,7 @@ plha / plhasa - command line tool for .lzh/.lha archives
   plhasa x archive.lzh        # extract
 
   # Override filename charset
-  plha -fc cp932 -tc UTF-8 v archive.lzh
+  plha --from-charset cp932 --to-charset UTF-8 v archive.lzh
   plha -fc iso-8859-15 v archive.lzh
 
 =head1 DESCRIPTION
@@ -658,28 +668,34 @@ Dump the raw parsed header data for each entry (for debugging).
 
 =over 4
 
-=item -fc I<charset>
+=item -fc I<charset>, --from-charset I<charset>
 
-Specify the character encoding of filenames stored in the archive
-(the "from" charset). Defaults to auto-detection based on the OS field
-in the archive header:
+Specify the character encoding of filenames stored in the archive.
+Defaults to auto-detection based on the OS field in the archive header:
 
   Amiga (a)        -> iso-8859-15
   MS-DOS/Win (M/w) -> cp1252
-  Unix (U)         -> UTF-8
+  Unix (U)         -> guess (Encode::Guess)
   Human68K (H/J)   -> cp932
 
 If the OS field is absent or unrecognised, L<Encode::Guess> is used to
-guess from latin1, latin2, cp932 and euc-jp.
+probe for latin1, latin2, cp932 and euc-jp.
 
 Supported charset names are those accepted by L<Encode>. Run
 C<perl -MEncode -e 'print join "\n", Encode->encodings(":all")'>
 for a full list.
 
-=item -tc I<charset>
+=item -tc I<charset>, --to-charset I<charset>
 
-Specify the output character encoding for displayed filenames (the "to"
-charset). Defaults to UTF-8.
+Specify the output character encoding for displayed filenames.
+Defaults to UTF-8.
+
+=item --use-locale
+
+Use the system locale for month name abbreviations in date output.
+By default, month names are always displayed in English (equivalent to
+LC_TIME=C), matching the behaviour of lhasa and LhA for UNIX, which both
+hardcode English month abbreviations.
 
 =back
 
