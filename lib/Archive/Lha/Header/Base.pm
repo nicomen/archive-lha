@@ -28,7 +28,7 @@ my %_os_charset = (
   'a' => 'iso-8859-15',  # Amiga
   'M' => 'cp1252',       # MS-DOS / Windows
   'w' => 'cp1252',       # WinNT / Win95
-  'U' => 'UTF-8',        # Unix
+  'U' => 'guess',        # Unix (encoding varies: UTF-8 on modern, latin-1 on older)
   'H' => 'cp932',        # Human68K (Sharp X68000)
   'J' => 'cp932',        # Java VM (often used with Japanese archives)
   'm' => 'UTF-8',        # Macintosh (modern)
@@ -94,8 +94,7 @@ sub dirname {
 sub _conv_sep {
   my $path = shift;
 
-  $path =~ s{\xff}{/}g;
-  $path =~ s{\\}{/}g;
+  $path =~ s{\xff|\\}{/}g;
   return $path;
 }
 
