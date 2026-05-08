@@ -3,7 +3,6 @@ package Archive::Lha::Header::Level0;
 use strict;
 use warnings;
 use Carp;
-use List::Util qw( sum );
 use Archive::Lha::Constants;
 use Archive::Lha::Header::Base;
 use Archive::Lha::Header::Utils;
@@ -11,17 +10,18 @@ use Archive::Lha::Header::Utils;
 sub new {
   my ($class, $stream) = @_;
 
-  # stored size doesn't include the size of itself and the checksum
   my $start = $stream->tell;
-  my $size = ord( $stream->read(1) ) + 2;
+  my $size  = ord($stream->read(1)) + 2;
 
-  croak "Header is broken: size is too small: $size" if $size < 24;  # lhasa minimum is 22+2
+  croak "Header is broken: size is too small: $size" if $size < 24;
 
-  $stream->seek( $start );
-  my @bits = split '', $stream->read( $size );
+  $stream->seek($start);
+  my $buf = $stream->read($size);
 
-  my $checksum  = ord( $bits[1] );
-  my $checksum1 = ( sum( map { ord } @bits[2..$#bits] ) ) & CHAR_MAX;
+  my $checksum  = ord(substr($buf, 1, 1));
+  my $checksum1 = 0;
+  $checksum1 += $_ for unpack 'C*', substr($buf, 2);
+  $checksum1 &= CHAR_MAX;
   croak "Header is broken: pos:$start checksum $checksum/$checksum1"
     unless $checksum == $checksum1;
 
@@ -29,27 +29,22 @@ sub new {
   $header{header_top}      = $start;
   $header{header_size}     = $size;
   $header{header_checksum} = $checksum;
-  $header{method}          = join '', @bits[3..5];
-  $header{encoded_size}    = _int( @bits[7..10] );
-  $header{original_size}   = _int( @bits[11..14] );
-  $header{timestamp}       = _dostime2utime( _int( @bits[15..18] ) );
+  $header{method}          = substr($buf, 3, 3);
+  $header{encoded_size}    = unpack 'V', substr($buf,  7, 4);
+  $header{original_size}   = unpack 'V', substr($buf, 11, 4);
+  $header{timestamp}       = _dostime2utime( unpack 'V', substr($buf, 15, 4) );
 
-  my $pathname_length = ord( $bits[21] );
-  $header{pathname}   = join '', @bits[22..(21 + $pathname_length)];
-  # Null byte separates pathname from file comment (filenote)
+  my $pathname_length = ord(substr($buf, 21, 1));
+  $header{pathname}   = substr($buf, 22, $pathname_length);
   if ($header{pathname} =~ s/\0(.+)//s) {
     $header{comment} = $1;
   }
-  $header{crc16}      = _short( @bits[(22 + $pathname_length)..(23 + $pathname_length)] );
+  $header{crc16} = unpack 'v', substr($buf, 22 + $pathname_length, 2);
 
-  my $extended_from = 24 + $pathname_length;
-  my $extended_to   = $#bits;
-
-  if ( $extended_from < $extended_to ) {
-    my %extended_area = _extended_area(
-      @bits[$extended_from .. $extended_to]
-    );
-    %header = ( %header, %extended_area );
+  my $ext_from = 24 + $pathname_length;
+  if ($ext_from < $size) {
+    my (undef, %ext) = _extended_header_buf($buf, $ext_from, $size - $ext_from);
+    %header = (%header, %ext) if %ext;
   }
 
   $header{data_top}    = $start + $size;
@@ -70,9 +65,7 @@ Archive::Lha::Header::Level0
 
 You usually don't need to use this directly. See L<Archive::Lha::Header> for examples.
 
-This parses Level 0 headers found mainly in the oldest archives created in the MS-DOS era. Actually, it was designed for LHarc, one of the ancestors of LHa.
-
-As Level 0 header has rather severe limitation for the path length of the archived file, recent archivers usually use Level 2 (or extended Level 1) headers. If you find multibyte strings in the header, most probably they are encoded in shift-jis.
+This parses Level 0 headers found mainly in the oldest archives created in the MS-DOS era.
 
 =head1 METHODS
 
