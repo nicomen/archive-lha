@@ -4,8 +4,6 @@
   This XS is, though largely modified, based on LHa for UNIX.
   See lib/Archive/Lha.pm for Authors/Copyright/License information.
 */
-#define _BSD_SOURCE
-#define _DEFAULT_SOURCE
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
