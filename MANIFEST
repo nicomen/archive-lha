@@ -40,7 +40,7 @@ t/archive/lh5_lvl1.lzh
 t/archive/lh5_truncated.lzh
 t/archive/lh7.lzh
 t/archive/amiga_allcaps_preserve.lha
-t/archive/MemLeakZ.lha
+t/archive/amiga_prefix.lha
 t/charset.t
 t/plha.t
 tools/plha
