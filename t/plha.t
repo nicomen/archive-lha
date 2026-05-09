@@ -6,13 +6,14 @@ use warnings;
 use Test::More;
 use FindBin qw/$Bin/;
 
-my $plha   = "$Bin/../tools/plha";
-my $plhasa = "$Bin/../tools/plhasa";
-my $blib   = "-I$Bin/../blib/lib -I$Bin/../blib/arch";
-my $lha    = "$Bin/archive/lh5.lzh";
-my $amiga  = "$Bin/archive/MemLeakZ.lha";
-my $latin1 = "$Bin/archive/Amoric_src.lha";
-my $trunc  = "$Bin/archive/lh5_truncated.lzh";
+my $plha      = "$Bin/../tools/plha";
+my $plhasa    = "$Bin/../tools/plhasa";
+my $blib      = "-I$Bin/../blib/lib -I$Bin/../blib/arch";
+my $lha       = "$Bin/archive/lh5.lzh";
+my $amiga     = "$Bin/archive/MemLeakZ.lha";
+my $amiga_uc  = "$Bin/archive/amiga_allcaps_preserve.lha";
+my $latin1    = "$Bin/archive/Amoric_src.lha";
+my $trunc     = "$Bin/archive/lh5_truncated.lzh";
 
 subtest 'plha v' => sub {
     my $output = `$^X $blib $plha v $lha 2>&1`;
@@ -119,10 +120,18 @@ subtest 'DOS timestamps' => sub {
 };
 
 subtest 'Amiga archive [Amiga] prefix' => sub {
-    plan skip_all => "MemLeakZ.lha not found" unless -f $amiga;
+    plan skip_all => "amiga_prefix.lha not found" unless -f $amiga;
     my $output = `$^X $blib $plhasa l $amiga 2>&1`;
     unlike $output, qr/Can't load|Can't locate/, 'No module loading errors';
     like $output, qr/\[Amiga\]/, 'Shows [Amiga] prefix for Amiga archive';
+};
+
+subtest 'Amiga archive filenames preserve case' => sub {
+    plan skip_all => "amiga_allcaps_preserve.lha not found" unless -f $amiga_uc;
+    my $output = `$^X $blib $plhasa v $amiga_uc 2>&1`;
+    # AUTHORS, CHANGES, COPYING are all-caps Amiga filenames; the MS-DOS
+    # all-caps lowercasing must not apply to Amiga archives
+    like $output, qr/\[Amiga\].*AUTHORS/, 'Amiga all-caps filename not lowercased';
 };
 
 subtest 'latin-1 filename display' => sub {

@@ -454,7 +454,7 @@ sub _list_lhasa {
         my $name  = _display_name($header);
         $name = '' if $name eq '.';  # empty root directory
         $name .= '/' if _is_directory($header) && $name ne '' && $name !~ m{/$};
-        $name = _fix_msdos_allcaps($name);
+        $name = _fix_msdos_allcaps($name) if ($header->{os}[0] // '') eq 'M';
         my $prefix = _lhasa_prefix($header);
         my $ratio_str = _is_directory($header) ? '******'
             : sprintf("%5.1f%%", $header->{original_size}
