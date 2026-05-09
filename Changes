@@ -1,5 +1,12 @@
 Revision history for Archive-Lha
 
+0.14  2026-05-09 (Nicolas Mendoza)
+    - Fix plhasa incorrectly lowercasing all-caps filenames in Amiga
+      archives; _fix_msdos_allcaps now only applies when OS byte is 'M'
+      (GitHub issue #2)
+    - Replace real-world test archives with minimal synthetic fixtures
+      (amiga_prefix.lha, amiga_allcaps_preserve.lha)
+
 0.13  2026-05-09 (Nicolas Mendoza)
     - XS implementations of checksum and dostime2utime in
       Archive::Lha::Header::Utils; pure-Perl fallbacks retained
