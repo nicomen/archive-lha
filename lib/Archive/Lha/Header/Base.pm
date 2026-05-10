@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Carp;
 use File::Spec;
+use File::Spec::Unix;
 
 sub import {
   my $class  = shift;
@@ -81,7 +82,7 @@ sub pathname {
     Encode::from_to( $path, $from, $to );
   }
 
-  return File::Spec->canonpath( $path );
+  return File::Spec::Unix->canonpath( $path );
 }
 
 sub dirname {
