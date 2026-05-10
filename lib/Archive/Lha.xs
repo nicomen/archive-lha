@@ -59,6 +59,9 @@ void
 input(LhaStash * stash, int len)
 {
   int n;
+  SV *sv;
+  STRLEN got;
+  const char *ptr;
   dSP;
   ENTER;
   SAVETMPS;
@@ -69,7 +72,9 @@ input(LhaStash * stash, int len)
   SPAGAIN;
   if (n != 1)
     safe_croak(stash, "There's something wrong in 'read' callback");
-  Copy(POPp, stash->bit->readbuf, len, unsigned char);
+  sv  = POPs;
+  ptr = SvPVbyte(sv, got);
+  Copy(ptr, stash->bit->readbuf, (STRLEN)len <= got ? (STRLEN)len : got, unsigned char);
   PUTBACK;
   FREETMPS;
   LEAVE;
