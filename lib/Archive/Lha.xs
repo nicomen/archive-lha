@@ -174,7 +174,7 @@ make_table(LhaStash * stash, LhaTable * table, unsigned short nchar)
 
   for(i = 1; i <= ushort_bit; i++) {
     count[i]  = 0;
-    weight[i] = 1 << (ushort_bit - i);
+    weight[i] = 1u << (ushort_bit - i);
   }
 
   for(i = 0; i < nchar; i++)
@@ -200,7 +200,7 @@ make_table(LhaStash * stash, LhaTable * table, unsigned short nchar)
   }
 
   from = start[table->bit + 1] >> bits_to_shift;
-  to   = min(1 << table->bit, table->size);
+  to   = min(1u << table->bit, table->size);
   if (from)
     for(i = from; i < to; i++)
       table->table[i] = 0;
@@ -388,7 +388,7 @@ decode_p(LhaStash * stash)
     fillbuf(stash, (unsigned char)(stash->pt->length[j] - stash->pt->bit));
   }
   if (j != 0)
-    j = (1 << (j - 1)) + getbits(stash, (unsigned char)(j - 1));
+    j = (1u << (j - 1)) + getbits(stash, (unsigned char)(j - 1));
   return j;
 }
 
@@ -497,7 +497,7 @@ xs_decode(hashref)
     init_tables(self, stash);
     init_bitstream(stash);
 
-    adjust = (1 << uchar_bit) - self_uchar("THRESHOLD");
+    adjust = (1u << uchar_bit) - self_uchar("THRESHOLD");
     crc16  = 0;
     loc    = 0;
     total  = 0;

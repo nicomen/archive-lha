@@ -36,18 +36,18 @@
 #define uchar_bit      8
 #define ushort_bit    16
 
-#define uchar_max (1 << uchar_bit) - 1
-#define ushort_max (1 << ushort_bit) - 1
+#define uchar_max  ((1u << uchar_bit)  - 1)
+#define ushort_max ((1u << ushort_bit) - 1)
 
-#define uchar_center  (1 << (uchar_bit - 1))
-#define ushort_center (1 << (ushort_bit - 1))
+#define uchar_center  (1u << (uchar_bit  - 1))
+#define ushort_center (1u << (ushort_bit - 1))
 
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
 
 #define create_mask(n) \
-  (1 << (ushort_bit - 1 - n))
+  (1u << (ushort_bit - 1 - n))
 
 #define readbuf_size 4096
 
