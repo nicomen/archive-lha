@@ -1,5 +1,14 @@
 Revision history for Archive-Lha
 
+0.16  2026-05-10 (Nicolas Mendoza)
+    - Fix decode corruption on Perl built with -Duselongdouble -DDEBUGGING:
+      replace POPp with POPs + SvPVbyte() in input() so the read callback's
+      return value is safely stringified before copying (#1)
+    - Fix UB in Lha.h and Lha.xs: use 1u instead of 1 in bit-shift
+      expressions to avoid signed overflow (introduced in fe85a9c)
+    - Add smoke CI job for Perl 5.36.3 long-double DEBUGGING (perlbrew)
+    - Remove generated lib/Archive/Lha.c from version control
+
 0.15  2026-05-09 (Nicolas Mendoza)
     - Remove _BSD_SOURCE/_DEFAULT_SOURCE defines from Lha.xs; these caused
       "Table is broken: total mismatch" decode failures on older glibc
