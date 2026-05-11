@@ -1,5 +1,11 @@
 Revision history for Archive-Lha
 
+0.18  2026-05-11 (Nicolas Mendoza)
+    - Fix DOS timestamp test to not assume positive epoch on 32-bit Perl:
+      0xFB9FF926 decodes to year 2105 which overflows 32-bit time_t on
+      ivsize=4 builds (e.g. armv6l without -Duse64bitint); only assert
+      no crash — proper fix is a Perl built with -Duse64bitint or -Duse64bitall
+
 0.17  2026-05-11 (Nicolas Mendoza)
     - Fix pathname() dropping trailing slash on directory entries
       (File::Spec->canonpath strips it); switch to File::Spec::Unix->canonpath
