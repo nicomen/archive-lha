@@ -1,5 +1,12 @@
 Revision history for Archive-Lha
 
+0.17  2026-05-11 (Nicolas Mendoza)
+    - Fix pathname() dropping trailing slash on directory entries
+      (File::Spec->canonpath strips it); switch to File::Spec::Unix->canonpath
+      for portable forward-slash paths on all platforms
+    - Add synthetic test archive dir_trailing_slash.lha with -lhd- and -lh0-
+      directory entries to regression-test trailing slash preservation
+
 0.16  2026-05-10 (Nicolas Mendoza)
     - Fix decode corruption on Perl built with -Duselongdouble -DDEBUGGING:
       replace POPp with POPs + SvPVbyte() in input() so the read callback's

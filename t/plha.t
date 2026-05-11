@@ -14,6 +14,7 @@ my $amiga     = "$Bin/archive/amiga_prefix.lha";
 my $amiga_uc  = "$Bin/archive/amiga_allcaps_preserve.lha";
 my $latin1    = "$Bin/archive/Amoric_src.lha";
 my $trunc     = "$Bin/archive/lh5_truncated.lzh";
+my $dirslash  = "$Bin/archive/dir_trailing_slash.lha";
 
 subtest 'plha v' => sub {
     my $output = `$^X $blib $plha v $lha 2>&1`;
@@ -105,6 +106,13 @@ subtest 'directory entries' => sub {
     my $output = `$^X $blib $plhasa v $lha 2>&1`;
     unlike $output, qr/LHD\.pm/, 'No LHD decoder error';
     unlike $output, qr/Can't load/, 'No module loading errors';
+};
+
+subtest 'directory trailing slash preserved' => sub {
+    plan skip_all => "dir_trailing_slash.lha not found" unless -f $dirslash;
+    my $output = `$^X $blib $plha v $dirslash 2>&1`;
+    like $output, qr/lhd_dir\//, '-lhd- directory entry has trailing slash';
+    like $output, qr/lh0_dir\//, '-lh0- directory entry has trailing slash';
 };
 
 subtest 'DOS timestamps' => sub {

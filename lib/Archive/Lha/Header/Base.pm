@@ -82,7 +82,10 @@ sub pathname {
     Encode::from_to( $path, $from, $to );
   }
 
-  return File::Spec::Unix->canonpath( $path );
+  my $trailing_slash = $path =~ m{/$};
+  $path = File::Spec::Unix->canonpath( $path );
+  $path .= '/' if $trailing_slash && $path !~ m{/$};
+  return $path;
 }
 
 sub dirname {
