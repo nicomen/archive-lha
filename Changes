@@ -1,5 +1,16 @@
 Revision history for Archive-Lha
 
+0.20  2026-05-13 (Nicolas Mendoza)
+    - Fix Windows path separators in pathname(): use File::Spec::Unix
+      throughout so LHA archive paths always use forward slashes
+    - Replace plhasa symlink with a real wrapper script (pl2bat cannot
+      convert symlinks on Windows); detect plhasa mode via $ENV{PLHASA}
+    - Fix timestamp display on Windows: avoid strftime %e (unsupported on
+      older MSVC CRT); use sprintf "%2d" for space-padded day instead
+    - Fix _ls_stamp_header to use _dostime2utime instead of POSIX::mktime
+    - Add Windows CI jobs (Strawberry Perl 5.38 and 5.40)
+    - Remove Data::Dump noise from t/20_decode.t test names
+
 0.19  2026-05-11 (Nicolas Mendoza)
     - Fix ratio precision in plhasa output: use pack/unpack 'f' to match
       lhasa's C float rounding (e.g. 25340/40000 gives 63.3% not 63.4%)
