@@ -18,17 +18,17 @@ jobs:
     name: Perl ${{ matrix.perl }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: kenchan0130/actions-system-info@master
         id: system-info
 
       - name: Set up Perl
-        uses: shogo82148/actions-setup-perl@v1
+        uses: shogo82148/actions-setup-perl@v1.41.0
         with:
           perl-version: ${{ matrix.perl }}
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/perl5
           key: ${{ runner.os }}-${{ steps.system-info.outputs.release }}-perl-${{ matrix.perl }}-${{ hashFiles('Makefile.PL') }}
@@ -51,10 +51,10 @@ jobs:
         perl: [ '5.38', '5.40' ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Perl
-        uses: shogo82148/actions-setup-perl@v1
+        uses: shogo82148/actions-setup-perl@v1.41.0
         with:
           perl-version: ${{ matrix.perl }}
           distribution: strawberry
@@ -74,11 +74,11 @@ jobs:
     env:
       PERLBREW_ROOT: /home/runner/perl5/perlbrew
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache perlbrew build
         id: cache-perl
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.PERLBREW_ROOT }}
           key: ${{ runner.os }}-perlbrew-5.36.3-ld-DEBUGGING-ithreads-v1
