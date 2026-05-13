@@ -5,6 +5,7 @@ MYMETA.yml
 blib/
 pm_to_blib
 *.bs
+*.def
 *.o
 *.so
 Archive-Lha-*.tar.gz

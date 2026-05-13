@@ -1,6 +1,7 @@
-.github/workflows/ci.yml
 bench/benchmark_list.pl
 Changes
+CONTRIBUTING.md
+LICENSE
 lib/Archive/Lha.h
 lib/Archive/Lha.pm
 lib/Archive/Lha.xs
@@ -29,6 +30,7 @@ Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
 README
+SECURITY.md
 t/00_load.t
 t/20_decode.t
 t/99_pod.t

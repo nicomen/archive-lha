@@ -1,5 +1,12 @@
 Revision history for Archive-Lha
 
+0.21  2026-05-13 (Nicolas Mendoza)
+    - Exclude .github/ from CPAN distribution via MANIFEST.SKIP
+    - Add CONTRIBUTING.md, SECURITY.md, and LICENSE file
+    - Add provides map to META_MERGE in Makefile.PL
+    - Update GitHub Actions to Node.js 24 compatible versions
+      (checkout@v5, cache@v5, actions-setup-perl@v1.41.0)
+
 0.20  2026-05-13 (Nicolas Mendoza)
     - Fix Windows path separators in pathname(): use File::Spec::Unix
       throughout so LHA archive paths always use forward slashes
