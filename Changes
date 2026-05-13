@@ -1,5 +1,12 @@
 Revision history for Archive-Lha
 
+0.19  2026-05-11 (Nicolas Mendoza)
+    - Fix ratio precision in plhasa output: use pack/unpack 'f' to match
+      lhasa's C float rounding (e.g. 25340/40000 gives 63.3% not 63.4%)
+    - Update MANIFEST: add t/charset.t, tools/plhasa, MANIFEST.SKIP,
+      .github/workflows/ci.yml, synthetic test archives; remove bin/act
+      and lib/Archive/Lha.c (generated, now git-ignored)
+
 0.18  2026-05-11 (Nicolas Mendoza)
     - Fix DOS timestamp test to not assume positive epoch on 32-bit Perl:
       0xFB9FF926 decodes to year 2105 which overflows 32-bit time_t on

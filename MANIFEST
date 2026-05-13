@@ -1,6 +1,6 @@
 .github/workflows/ci.yml
+bench/benchmark_list.pl
 Changes
-lib/Archive/Lha.c
 lib/Archive/Lha.h
 lib/Archive/Lha.pm
 lib/Archive/Lha.xs
@@ -33,14 +33,15 @@ t/00_load.t
 t/20_decode.t
 t/99_pod.t
 t/99_podcoverage.t
+t/archive/amiga_allcaps_preserve.lha
+t/archive/amiga_prefix.lha
 t/archive/Amoric_src.lha
+t/archive/dir_trailing_slash.lha
 t/archive/lh0.lzh
 t/archive/lh5.lzh
 t/archive/lh5_lvl1.lzh
 t/archive/lh5_truncated.lzh
 t/archive/lh7.lzh
-t/archive/amiga_allcaps_preserve.lha
-t/archive/amiga_prefix.lha
 t/charset.t
 t/plha.t
 tools/plha
