@@ -48,7 +48,7 @@ sub pathname {
     $path = _conv_sep( $self->{pathname} );
   }
   elsif ( $self->{directory} && $self->{filename} ) {
-    $path = File::Spec->catfile(
+    $path = File::Spec::Unix->catfile(
       _conv_sep( $self->{directory} ),
       _conv_sep( $self->{filename} )
     );
@@ -61,9 +61,9 @@ sub pathname {
   }
 
   # avoid traversal
-  if ( File::Spec->file_name_is_absolute( $path ) ) {
-    my ($vol, $dir, $file) = File::Spec->splitpath( $path );
-    $path = File::Spec->catfile( '.', $dir, $file );
+  if ( File::Spec::Unix->file_name_is_absolute( $path ) ) {
+    my ($vol, $dir, $file) = File::Spec::Unix->splitpath( $path );
+    $path = File::Spec::Unix->catfile( '.', $dir, $file );
   }
 
   # default from-encoding: auto-detect from OS field
