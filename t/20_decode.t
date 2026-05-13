@@ -3,7 +3,6 @@ use warnings;
 use Test::More qw( no_plan );
 use Archive::Lha::Header;
 use Archive::Lha::Decode;
-use Data::Dump;
 
 test( hex_stream() );
 foreach my $name (qw( lh5 lh7 lh0 )) {
@@ -38,10 +37,10 @@ sub test {
     }
 
     if ( defined $value ) {
-      ok $decoded eq $value, Data::Dump::dump( $header, $decoded );
+      ok $decoded eq $value, "decoded content matches expected for " . $header->pathname;
     }
     else {
-      ok $decoded, Data::Dump::dump( $header, $decoded );
+      ok $decoded, "decoded content non-empty for " . $header->pathname;
     }
   }
 }

@@ -42,6 +42,32 @@ jobs:
       - name: Test
         run: prove -wlvmb t
 
+  test-windows:
+    runs-on: windows-latest
+    name: Perl ${{ matrix.perl }} (Windows/Strawberry)
+
+    strategy:
+      matrix:
+        perl: [ '5.38', '5.40' ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+          distribution: strawberry
+
+      - name: Install dependencies
+        run: cpanm --notest --installdeps .
+
+      - name: Build
+        run: perl Makefile.PL && gmake
+
+      - name: Test
+        run: prove -wlvmb t
+
   smoke:
     runs-on: ubuntu-latest
     name: Perl 5.36.3 long-double DEBUGGING

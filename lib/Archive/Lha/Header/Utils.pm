@@ -46,7 +46,7 @@ sub _dostime2utime {
     (($v >> 21) & 0x0F) - 1,
     (($v >> 25) & 0x7F) + 80,
   );
-  eval { Time::Local::timegm(@t) } // POSIX::mktime(@t[0..5]) // 0;
+  eval { Time::Local::timegm(@t) } // 0;
 }
 
 sub _os_id {
