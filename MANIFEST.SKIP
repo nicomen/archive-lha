@@ -27,5 +27,4 @@
 MYMETA\.(json|yml)$
 ^nytprof
 ^nytprof\.out$
-^debug\.log$
 ^MANIFEST\.bak$

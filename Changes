@@ -1,5 +1,10 @@
 Revision history for Archive-Lha
 
+0.22  2026-05-14 (Nicolas Mendoza)
+    - Remove Archive::Lha::Debug and heavyweight deps (Log::Dispatch, Data::Dump)
+    - Add Test::UseAllModules to TEST_REQUIRES
+    - Fix provides version in META_MERGE to match distribution version
+
 0.21  2026-05-13 (Nicolas Mendoza)
     - Exclude .github/ from CPAN distribution via MANIFEST.SKIP
     - Add CONTRIBUTING.md, SECURITY.md, and LICENSE file

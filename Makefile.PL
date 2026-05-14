@@ -2,6 +2,8 @@ use strict;
 use warnings;
 use ExtUtils::MakeMaker;
 
+my $version = MM->parse_version('lib/Archive/Lha.pm');
+
 WriteMakefile(
     NAME          => 'Archive::Lha',
     VERSION_FROM  => 'lib/Archive/Lha.pm',
@@ -40,7 +42,7 @@ WriteMakefile(
             },
         },
         provides => {
-            'Archive::Lha'                 => { file => 'lib/Archive/Lha.pm',                   version => '0.20' },
+            'Archive::Lha'                 => { file => 'lib/Archive/Lha.pm', version => $version },
             'Archive::Lha::CRC'            => { file => 'lib/Archive/Lha/CRC.pm' },
             'Archive::Lha::Constants'      => { file => 'lib/Archive/Lha/Constants.pm' },
             'Archive::Lha::Decode'         => { file => 'lib/Archive/Lha/Decode.pm' },
