@@ -7,7 +7,6 @@ lib/Archive/Lha.pm
 lib/Archive/Lha.xs
 lib/Archive/Lha/Constants.pm
 lib/Archive/Lha/CRC.pm
-lib/Archive/Lha/Debug.pm
 lib/Archive/Lha/Decode.pm
 lib/Archive/Lha/Decode/Base.pm
 lib/Archive/Lha/Decode/LH0.pm

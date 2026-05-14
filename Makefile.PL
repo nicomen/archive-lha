@@ -20,8 +20,6 @@ WriteMakefile(
         'File::Path'      => 0,
         'Getopt::Long'    => 0,
         'Time::Moment'    => 0,
-        'Log::Dispatch'   => 0,
-        'Data::Dump'      => 0,
     },
     TEST_REQUIRES => {
         'Test::More'          => '0.47',
@@ -45,7 +43,6 @@ WriteMakefile(
             'Archive::Lha'                 => { file => 'lib/Archive/Lha.pm',                   version => '0.20' },
             'Archive::Lha::CRC'            => { file => 'lib/Archive/Lha/CRC.pm' },
             'Archive::Lha::Constants'      => { file => 'lib/Archive/Lha/Constants.pm' },
-            'Archive::Lha::Debug'          => { file => 'lib/Archive/Lha/Debug.pm' },
             'Archive::Lha::Decode'         => { file => 'lib/Archive/Lha/Decode.pm' },
             'Archive::Lha::Decode::Base'   => { file => 'lib/Archive/Lha/Decode/Base.pm' },
             'Archive::Lha::Decode::LH0'    => { file => 'lib/Archive/Lha/Decode/LH0.pm' },
