@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use Carp;
 use Time::Local ();
-use POSIX ();
 eval { require Archive::Lha::Decode::Base };  # bootstrap XS functions
 use Exporter::Lite;
 
@@ -47,7 +46,11 @@ sub _dostime_fields {
 
 sub _dostime2utime_pp {
   return 0 unless @_ && $_[0];
-  eval { Time::Local::timegm(_dostime_fields($_[0])) } // 0;
+  my @t = _dostime_fields($_[0]);
+  # DOS timestamps are local time, like the XS mktime. Pass a full year
+  # to avoid Time::Local's two-digit-year heuristic.
+  $t[5] += 1900;
+  eval { Time::Local::timelocal(@t) } // 0;
 }
 
 sub _os_id {
