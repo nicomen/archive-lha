@@ -24,7 +24,7 @@ WriteMakefile(
         'Time::Moment'    => 0,
     },
     TEST_REQUIRES => {
-        'Test::More'          => '0.47',
+        'Test::More'          => '0.96',    # subtest
         'Test::UseAllModules' => '0.09',
         'Time::Moment'        => 0,
         'File::Slurp'         => 0,
