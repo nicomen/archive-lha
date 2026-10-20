@@ -10,7 +10,7 @@ on:
 jobs:
   # CPAN-smoker-style matrix: Linux perl 5.10-5.44, FreeBSD, Cygwin, Solaris
   environments:
-    uses: nicomen/App-SlimPacker/.github/workflows/perl-matrix.yml@main
+    uses: ./.github/workflows/perl-matrix.yml
 
   test-windows:
     runs-on: windows-latest
