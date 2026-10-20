@@ -8,39 +8,9 @@ on:
   pull_request:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        perl: [ '5.36', '5.38', '5.40' ]
-
-    name: Perl ${{ matrix.perl }}
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: kenchan0130/actions-system-info@master
-        id: system-info
-
-      - name: Set up Perl
-        uses: shogo82148/actions-setup-perl@v1.41.0
-        with:
-          perl-version: ${{ matrix.perl }}
-
-      - uses: actions/cache@v5
-        with:
-          path: ~/perl5
-          key: ${{ runner.os }}-${{ steps.system-info.outputs.release }}-perl-${{ matrix.perl }}-${{ hashFiles('Makefile.PL') }}
-
-      - name: Install dependencies
-        run: cpanm --notest --installdeps .
-
-      - name: Build
-        run: perl Makefile.PL && make
-
-      - name: Test
-        run: prove -wlvmb t
+  # CPAN-smoker-style matrix: Linux perl 5.10-5.44, FreeBSD, Cygwin, Solaris
+  environments:
+    uses: nicomen/App-SlimPacker/.github/workflows/perl-matrix.yml@main
 
   test-windows:
     runs-on: windows-latest
